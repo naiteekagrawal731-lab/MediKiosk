@@ -1,0 +1,352 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MediKiosk API Tester</title>
+    <style>
+        :root {
+            --bg-color: #0f172a;
+            --panel-bg: #1e293b;
+            --text-color: #f8fafc;
+            --border-color: #334155;
+            --primary: #3b82f6;
+            --primary-hover: #2563eb;
+            --success: #10b981;
+            --error: #ef4444;
+        }
+
+        body {
+            font-family: system-ui, -apple-system, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        h1 {
+            margin-top: 0;
+            color: #60a5fa;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 900px;
+            display: grid;
+            grid-template-columns: 250px 1fr;
+            gap: 20px;
+        }
+
+        .card {
+            background-color: var(--panel-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 20px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+
+        .sidebar {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        button {
+            background-color: var(--primary);
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            text-align: left;
+            transition: background 0.2s;
+        }
+
+        button:hover {
+            background-color: var(--primary-hover);
+        }
+
+        button.active {
+            background-color: #6366f1;
+            box-shadow: 0 0 0 2px #c7d2fe;
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-size: 14px;
+            color: #94a3b8;
+        }
+
+        input {
+            width: 100%;
+            padding: 10px;
+            background-color: #0f172a;
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            color: white;
+            font-size: 14px;
+            box-sizing: border-box;
+        }
+
+        input:focus {
+            outline: none;
+            border-color: var(--primary);
+        }
+
+        .response-area {
+            margin-top: 20px;
+        }
+
+        pre {
+            background-color: #0f172a;
+            padding: 15px;
+            border-radius: 6px;
+            border: 1px solid var(--border-color);
+            overflow-x: auto;
+            font-size: 13px;
+            color: #a7f3d0;
+            white-space: pre-wrap;
+            min-height: 100px;
+        }
+
+        .status {
+            display: inline-block;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+        
+        .status.ok { background-color: rgba(16, 185, 129, 0.2); color: var(--success); }
+        .status.err { background-color: rgba(239, 68, 68, 0.2); color: var(--error); }
+
+        .settings-bar {
+            width: 100%;
+            max-width: 900px;
+            display: flex;
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+        
+        .settings-bar .form-group {
+            flex: 1;
+            margin: 0;
+        }
+    </style>
+</head>
+<body>
+
+    <h1>MediKiosk Simple Tester</h1>
+
+    <div class="settings-bar">
+        <div class="form-group">
+            <label>Backend URL</label>
+            <input type="text" id="base-url" value="http://localhost:8081">
+        </div>
+        <div class="form-group">
+            <label>Current Token (auto-filled)</label>
+            <input type="text" id="current-token" readonly placeholder="No token yet">
+        </div>
+    </div>
+
+    <div class="container">
+        <!-- Sidebar -->
+        <div class="card sidebar">
+            <h3>Endpoints</h3>
+            <button id="btn-register" onclick="loadUI('register')">Register</button>
+            <button id="btn-login" onclick="loadUI('login')">Login</button>
+            <button id="btn-token" onclick="loadUI('token')">Get Token</button>
+            <button id="btn-change-password" onclick="loadUI('change-password')">Change Password</button>
+            <button id="btn-logout" onclick="loadUI('logout')">Logout</button>
+        </div>
+
+        <!-- Main Panel -->
+        <div class="card main-panel">
+            <h2 id="panel-title">Select an endpoint</h2>
+            
+            <div id="form-container">
+                <!-- Inputs injected here -->
+            </div>
+
+            <button id="submit-btn" style="margin-top: 15px; width: 100%; text-align: center; background-color: #10b981;" onclick="executeRequest()">
+                Send Request
+            </button>
+
+            <div class="response-area">
+                <h3>Response</h3>
+                <div id="status-indicator"></div>
+                <pre id="response-box">Awaiting request...</pre>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let currentEndpoint = 'register';
+        let jwtToken = null;
+
+        const uiConfig = {
+            'register': {
+                title: 'Register New User',
+                url: '/api/register',
+                method: 'POST',
+                inputs: [
+                    { id: 'username', label: 'Username', type: 'text' },
+                    { id: 'password', label: 'Password', type: 'password' }
+                ]
+            },
+            'login': {
+                title: 'Login',
+                url: '/api/login/usernamepassword',
+                method: 'POST',
+                inputs: [
+                    { id: 'username', label: 'Username', type: 'text' },
+                    { id: 'password', label: 'Password', type: 'password' }
+                ]
+            },
+            'token': {
+                title: 'Get Access Token',
+                url: '/api/auth/token',
+                method: 'GET',
+                inputs: []
+            },
+            'change-password': {
+                title: 'Change Password',
+                url: '/api/changepassword',
+                method: 'POST',
+                requiresToken: true,
+                inputs: [
+                    { id: 'newPassword', label: 'New Password', type: 'password' }
+                ]
+            },
+            'logout': {
+                title: 'Logout',
+                url: '/api/logout',
+                method: 'POST',
+                inputs: []
+            }
+        };
+
+        function loadUI(endpoint) {
+            currentEndpoint = endpoint;
+            
+            // Highlight button
+            document.querySelectorAll('.sidebar button').forEach(b => b.classList.remove('active'));
+            document.getElementById('btn-' + endpoint).classList.add('active');
+
+            const config = uiConfig[endpoint];
+            document.getElementById('panel-title').innerText = config.title;
+
+            // Generate Inputs
+            const formContainer = document.getElementById('form-container');
+            formContainer.innerHTML = '';
+            
+            if (config.requiresToken && !jwtToken) {
+                formContainer.innerHTML = '<p style="color:#ef4444; font-size: 14px;">Warning: You do not have an access token yet. Run "Get Token" first.</p>';
+            }
+
+            config.inputs.forEach(input => {
+                formContainer.innerHTML += `
+                    <div class="form-group">
+                        <label>${input.label}</label>
+                        <input type="${input.type}" id="input-${input.id}" />
+                    </div>
+                `;
+            });
+
+            // Clear response
+            document.getElementById('response-box').innerText = 'Ready to send request...';
+            document.getElementById('status-indicator').innerHTML = '';
+        }
+
+        async function executeRequest() {
+            const config = uiConfig[currentEndpoint];
+            const baseUrl = document.getElementById('base-url').value;
+            const url = baseUrl + config.url;
+            
+            // Gather body data
+            let body = null;
+            if (config.inputs.length > 0) {
+                body = {};
+                config.inputs.forEach(input => {
+                    body[input.id] = document.getElementById('input-' + input.id).value;
+                });
+            }
+
+            // Prepare fetch options
+            const options = {
+                method: config.method,
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                credentials: 'include' // Required for sending/receiving refresh_token cookie
+            };
+
+            if (config.requiresToken && jwtToken) {
+                options.headers['Authorization'] = 'Bearer ' + jwtToken;
+            }
+
+            if (body && config.method !== 'GET') {
+                options.body = JSON.stringify(body);
+            }
+
+            document.getElementById('response-box').innerText = 'Sending...';
+            document.getElementById('status-indicator').innerHTML = '';
+
+            try {
+                const response = await fetch(url, options);
+                
+                // Parse response
+                const contentType = response.headers.get("content-type");
+                let data;
+                if (contentType && contentType.indexOf("application/json") !== -1) {
+                    data = await response.json();
+                } else {
+                    data = await response.text();
+                }
+
+                // Show status
+                const isOk = response.ok;
+                document.getElementById('status-indicator').innerHTML = 
+                    `<span class="status ${isOk ? 'ok' : 'err'}">${response.status} ${response.statusText}</span>`;
+                
+                // Show data
+                document.getElementById('response-box').innerText = typeof data === 'object' ? JSON.stringify(data, null, 2) : data;
+
+                // Special handling for Get Token endpoint
+                if (currentEndpoint === 'token' && isOk && data.accessToken) {
+                    jwtToken = data.accessToken;
+                    document.getElementById('current-token').value = jwtToken;
+                }
+                
+                if (currentEndpoint === 'logout' && isOk) {
+                    jwtToken = null;
+                    document.getElementById('current-token').value = '';
+                }
+
+            } catch (error) {
+                document.getElementById('status-indicator').innerHTML = `<span class="status err">Network Error</span>`;
+                document.getElementById('response-box').innerText = 
+                    error.message + '\n\n' +
+                    'Hint: If you are seeing a CORS or Network error, make sure:\n' +
+                    '1. Your backend is actually running.\n' +
+                    '2. It is running on ' + baseUrl + '\n' +
+                    '3. Your backend allows credentials and origin in CORS settings.';
+            }
+        }
+
+        // Initialize first view
+        loadUI('register');
+    </script>
+</body>
+</html>
