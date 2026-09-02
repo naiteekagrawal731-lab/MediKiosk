@@ -32,6 +32,7 @@ ALLOWED_HOSTS = config(
 # Application definition
 
 INSTALLED_APPS = [
+    'clinical',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
