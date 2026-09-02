@@ -24,15 +24,19 @@ SECRET_KEY = config("DJANGO_SECRET_KEY")
 
 DEBUG = config("DEBUG", default=False, cast=bool)
 
-ALLOWED_HOSTS = config(
-    "ALLOWED_HOSTS",
-    default="localhost,127.0.0.1"
-).split(",")
+# ALLOWED_HOSTS = config(
+#     "ALLOWED_HOSTS",
+#     default="localhost,127.0.0.1"
+# ).split(",")
 
-# Application definition
+ALLOWED_HOSTS=[]
+
+# Application definition 
 
 INSTALLED_APPS = [
     'clinical',
+    "rest_framework",
+    "corsheaders",
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -43,6 +47,7 @@ INSTALLED_APPS = [
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
+    "corsheaders.middleware.CorsMiddleware",
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -52,6 +57,8 @@ MIDDLEWARE = [
 ]
 
 ROOT_URLCONF = 'mysite.urls'
+
+CORS_ALLOW_ALL_ORIGINS = True #⚠️ This is convenient for development. Later, when deploying, we'll restrict it to your actual React frontend URL.
 
 TEMPLATES = [
     {
@@ -130,4 +137,10 @@ MAILERS = {
     'default': {
         'BACKEND': 'django.core.mail.backends.console.EmailBackend',
     },
+}
+
+REST_FRAMEWORK = {
+    "DEFAULT_PERMISSION_CLASSES": [
+        "rest_framework.permissions.AllowAny",
+    ],
 }
