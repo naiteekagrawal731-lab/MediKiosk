@@ -31,8 +31,10 @@ public class AccessTokenController {
     public ResponseEntity<AccessTokenResponse> getAccessToken(HttpServletRequest request) {
         Cookie[] cookies = request.getCookies();
         if (cookies == null) {
+            log.info("User cookies = null");
             throw new InvalidToken("No cookies present — please log in first");
         }
+        log.info("User cookies = {}", Arrays.toString(cookies));
 
         Optional<Cookie> refreshToken = Arrays.stream(cookies)
                 .filter(c -> c.getName().equals("refresh_token"))

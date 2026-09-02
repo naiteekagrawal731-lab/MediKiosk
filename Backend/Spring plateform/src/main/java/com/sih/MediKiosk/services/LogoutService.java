@@ -46,11 +46,16 @@ public class LogoutService {
         }
 
         // Clear the cookie
-        Cookie expiredCookie = new Cookie("refresh_token", "");
-        expiredCookie.setPath("/");
-        expiredCookie.setMaxAge(0);
-        expiredCookie.setHttpOnly(true);
-        response.addCookie(expiredCookie);
+        org.springframework.http.ResponseCookie expiredCookie = org.springframework.http.ResponseCookie
+                .from("refresh_token", "")
+                .httpOnly(true)
+                .secure(false)
+                .path("/")
+                .maxAge(0)
+                .sameSite("Lax")
+                .build();
+
+        response.addHeader(org.springframework.http.HttpHeaders.SET_COOKIE, expiredCookie.toString());
 
         return ResponseEntity.ok("Logged out successfully");
     }

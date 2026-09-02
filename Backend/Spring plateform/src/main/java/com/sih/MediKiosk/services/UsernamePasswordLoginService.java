@@ -44,12 +44,16 @@ public class UsernamePasswordLoginService {
         log.info("Generating refresh token for user: {}", username);
         UUID refreshToken = userRefreshTokenService.generateRefreshToken(user);
 
-        Cookie refreshTokenCookie = new Cookie("refresh_token", String.valueOf(refreshToken));
-        refreshTokenCookie.setPath("/**");
-        refreshTokenCookie.setMaxAge(3600 * 24 * 30); // 30 days
-        refreshTokenCookie.setHttpOnly(true);
+        org.springframework.http.ResponseCookie refreshTokenCookie = org.springframework.http.ResponseCookie
+                .from("refresh_token", String.valueOf(refreshToken))
+                .httpOnly(true)
+                .secure(false)
+                .path("/")
+                .maxAge(3600 * 24 * 30)
+                .sameSite("Lax")
+                .build();
 
-        response.addCookie(refreshTokenCookie);
+        response.addHeader(org.springframework.http.HttpHeaders.SET_COOKIE, refreshTokenCookie.toString());
 
         log.info("Login successful for user: {}", username);
         return ResponseEntity.ok("Login Successful");

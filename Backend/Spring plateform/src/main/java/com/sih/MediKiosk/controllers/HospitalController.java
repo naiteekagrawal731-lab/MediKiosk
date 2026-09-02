@@ -1,12 +1,11 @@
 package com.sih.MediKiosk.controllers;
 
 import com.sih.MediKiosk.dtos.requestDtos.CreateHospitalRequest;
+import com.sih.MediKiosk.dtos.responseDtos.RegistrationNumberResponse;
 import com.sih.MediKiosk.services.HospitalService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/hospital")
@@ -20,7 +19,13 @@ public class HospitalController {
     }
 
     @PostMapping("/create")
-    public ResponseEntity<?> createNewHosptial(CreateHospitalRequest request){
+    public ResponseEntity<?> createNewHosptial(@RequestBody CreateHospitalRequest request) {
+        log.info("Hospital creation request = "+request.toString());
         return hospitalService.createNewHospital(request);
+    }
+
+    @GetMapping("/registrationNumber")
+    public ResponseEntity<RegistrationNumberResponse> getRegistrationNumber() {
+        return hospitalService.getRegistrationNumber();
     }
 }

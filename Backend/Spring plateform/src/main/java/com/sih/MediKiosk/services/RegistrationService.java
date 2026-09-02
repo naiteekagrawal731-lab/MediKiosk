@@ -36,12 +36,35 @@ public class RegistrationService {
         User user = User.builder()
                 .username(username)
                 .password(passwordEncoder.encode(request.getPassword()))
-                .role(Role.USER)
+                .role(Role.PATIENT)
                 .build();
 
         userRepository.save(user);
         log.info("User registered successfully: {}", username);
 
+        return ResponseEntity.status(201)
+                .body(RegistrationResponse.builder()
+                        .message("User '" + username + "' registered successfully")
+                        .build());
+    }
+    ResponseEntity<RegistrationResponse> register(RegistrationRequest request,Role role){
+        String username = request.getUsername();
+
+        if (userRepository.getUserByUsername(username).isPresent()) {
+            return ResponseEntity.badRequest()
+                    .body(RegistrationResponse.builder()
+                            .message("Username '" + username + "' is already taken")
+                            .build());
+        }
+
+        User user = User.builder()
+                .username(username)
+                .password(passwordEncoder.encode(request.getPassword()))
+                .role(role)
+                .build();
+
+        userRepository.save(user);
+        log.info("User registered successfully: {}", username);
         return ResponseEntity.status(201)
                 .body(RegistrationResponse.builder()
                         .message("User '" + username + "' registered successfully")

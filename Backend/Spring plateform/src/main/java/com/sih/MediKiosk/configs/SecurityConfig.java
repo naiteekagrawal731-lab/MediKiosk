@@ -1,6 +1,5 @@
 package com.sih.MediKiosk.configs;
 
-
 import com.sih.MediKiosk.filters.JwtFilter;
 import com.sih.MediKiosk.security.user.AppUserDetailsService;
 import lombok.extern.slf4j.Slf4j;
@@ -56,8 +55,8 @@ public class SecurityConfig {
                                 "/error",
                                 "/favicon.ico",
                                 "/index.html",
-                                "/assets/**"
-                        ).permitAll()
+                                "/assets/**")
+                        .permitAll()
                         .anyRequest().authenticated())
                 .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class)
                 .userDetailsService(userDetailsService)
