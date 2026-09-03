@@ -145,4 +145,8 @@ REST_FRAMEWORK = {
     ],
 }
 
+STATIC_URL = "static/"
+MEDIA_URL = "/media/"
+MEDIA_ROOT = BASE_DIR / "media"
+
 AI_SERVICE_API_KEY = config("AI_SERVICE_API_KEY")

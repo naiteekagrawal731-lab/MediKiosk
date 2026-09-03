@@ -13,7 +13,7 @@ from .views import (
     MedicalDocumentUploadView,
     MedicalDocumentAIUpdateView,
     MedicalDocumentListView,
-    MedicalDocumentListViewDoctor,
+    MedicalDocumentListViewAI,
 
     ClinicalSummaryAIUpdateView,
     ClinicalSummaryView,
@@ -63,7 +63,7 @@ urlpatterns = [
     # ========================================================
 
     path(
-        "session/<str:session_id>/history/ai",
+        "session/<str:session_id>/history/ai/",
         ClinicalHistoryView.as_view(),
         name="clinical-history",
     ),
@@ -74,7 +74,7 @@ urlpatterns = [
     # ========================================================
 
     path(
-        "session/<str:session_id>/ayush/ai",
+        "session/<str:session_id>/ayush/ai/",
         AYUSHHistoryView.as_view(),
         name="ayush-history",
     ),
@@ -97,19 +97,18 @@ urlpatterns = [
         MedicalDocumentAIUpdateView.as_view(),
         name="medical-document-ai-update",
     ),
+    
+    path(
+        "session/<str:session_id>/documents/ai/",
+        MedicalDocumentListViewAI.as_view(),
+        name="medical-document-ai-view",
+    ),
 
     # patient/ai views/get documents
     path(
         "session/<str:session_id>/documents/",
         MedicalDocumentListView.as_view(),
         name="medical-document-list",
-    ),
-    
-    # Doctor views documents
-    path(
-        "session/<str:session_id>/documents/doctor",
-        MedicalDocumentListViewDoctor.as_view(),
-        name="medical-document-list-doctor",
     ),
 
     # ========================================================

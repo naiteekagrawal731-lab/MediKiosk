@@ -21,8 +21,8 @@ from .serializers import (
     ClinicalSessionSerializer,
     ClinicalSessionSerializerAI,
     HistoryAnswerSerializer,
-    ClinicalHistorySerializer,
-    AYUSHHistorySerializer,
+    ClinicalHistorySerializerAI,
+    AYUSHHistorySerializerAI,
     MedicalDocumentSerializerAI,
     MedicalDocumentSerializer,
     MedicalDocumentSerializerDoctor,
@@ -238,7 +238,7 @@ class ClinicalHistoryView(APIView):
                 status=status.HTTP_404_NOT_FOUND
             )
 
-        serializer = ClinicalHistorySerializer(history)
+        serializer = ClinicalHistorySerializerAI(history)
 
         return Response(serializer.data)
 
@@ -255,7 +255,7 @@ class ClinicalHistoryView(APIView):
         try:
             history = session.history
 
-            serializer = ClinicalHistorySerializer(
+            serializer = ClinicalHistorySerializerAI(
                 history,
                 data=request.data,
                 partial=True
@@ -263,7 +263,7 @@ class ClinicalHistoryView(APIView):
 
         except ClinicalHistory.DoesNotExist:
 
-            serializer = ClinicalHistorySerializer(
+            serializer = ClinicalHistorySerializerAI(
                 data=request.data
             )
 
@@ -272,7 +272,7 @@ class ClinicalHistoryView(APIView):
             history = serializer.save(session=session)
 
             return Response(
-                ClinicalHistorySerializer(history).data,
+                ClinicalHistorySerializerAI(history).data,
                 status=status.HTTP_200_OK
             )
 
@@ -312,7 +312,7 @@ class AYUSHHistoryView(APIView):
                 status=status.HTTP_404_NOT_FOUND
             )
 
-        serializer = AYUSHHistorySerializer(ayush_history)
+        serializer = AYUSHHistorySerializerAI(ayush_history)
 
         return Response(serializer.data)
 
@@ -329,7 +329,7 @@ class AYUSHHistoryView(APIView):
         try:
             ayush_history = session.ayush_history
 
-            serializer = AYUSHHistorySerializer(
+            serializer = AYUSHHistorySerializerAI(
                 ayush_history,
                 data=request.data,
                 partial=True
@@ -337,7 +337,7 @@ class AYUSHHistoryView(APIView):
 
         except AYUSHHistory.DoesNotExist:
 
-            serializer = AYUSHHistorySerializer(
+            serializer = AYUSHHistorySerializerAI(
                 data=request.data
             )
 
@@ -346,7 +346,7 @@ class AYUSHHistoryView(APIView):
             ayush_history = serializer.save(session=session)
 
             return Response(
-                AYUSHHistorySerializer(ayush_history).data,
+                AYUSHHistorySerializerAI(ayush_history).data,
                 status=status.HTTP_200_OK
             )
 
@@ -479,7 +479,7 @@ class MedicalDocumentListView(APIView):
     """
     GET /api/clinical/session/<session_id>/documents/
 
-    Used by patient/frontend/ai to view/get uploaded documents.
+    Used by patient/frontend to view uploaded documents.
     """
 
     def get(self, request, session_id):
@@ -502,18 +502,53 @@ class MedicalDocumentListView(APIView):
         )
 
         return Response(serializer.data)
-
+    
 # ============================================================
-# MEDICAL DOCUMENT LIST VIEW DOCTOR
+# MEDICAL DOCUMENT LIST For AI
 # ============================================================
 
-class MedicalDocumentListViewDoctor(APIView): #need to verify doctor or not
+class MedicalDocumentListViewAI(APIView):
     """
-    GET /api/clinical/session/<session_id>/documents/doctor
+    GET /api/clinical/session/<session_id>/documents/
 
-    Used by doctor to view full documents details.
+    Used by patient/frontend to view uploaded documents.
     """
+    
+    authentication_classes = [AIServiceAuthentication]
 
+    def get(self, request, session_id):
+
+        session = get_session_or_404(session_id)
+
+        if not session:
+            return Response(
+                {"error": "Clinical session not found."},
+                status=status.HTTP_404_NOT_FOUND
+            )
+
+        documents = MedicalDocument.objects.filter(
+            session=session
+        ).order_by("-uploaded_at")
+
+        serializer = MedicalDocumentSerializerAI(
+            documents,
+            many=True
+        )
+
+        return Response(serializer.data)
+    
+# ============================================================
+# MEDICAL DOCUMENT LIST View FOR SPRINGBOOT
+# ============================================================
+
+class MedicalDocumentListViewSpring(APIView):
+    """
+    GET /api/clinical/session/<session_id>/documents/
+
+    Used by springboot to get medical info. 
+    """
+    #use api key for secure spring ka hi connection (check then send)
+    
     def get(self, request, session_id):
 
         session = get_session_or_404(session_id)
@@ -534,6 +569,7 @@ class MedicalDocumentListViewDoctor(APIView): #need to verify doctor or not
         )
 
         return Response(serializer.data)
+
 
 # ============================================================
 # AI SUMMARY UPDATE

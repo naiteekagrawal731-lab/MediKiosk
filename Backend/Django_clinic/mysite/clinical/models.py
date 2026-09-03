@@ -66,6 +66,9 @@ class HistoryAnswer(models.Model):
 
     created_at = models.DateTimeField(auto_now_add=True)
     
+    def __str__(self):
+        return f"{self.session} -- {self.question_key}"
+    
 
 class ClinicalHistory(models.Model):
     session = models.OneToOneField(
@@ -191,6 +194,9 @@ class MedicalDocument(models.Model):
         default=dict,
         blank=True
     )
+    
+    def __str__(self):
+        return f"{self.session} - {self.document_date}"
     
 
 class ClinicalSummary(models.Model):

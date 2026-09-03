@@ -59,7 +59,7 @@ class HistoryAnswerSerializer(serializers.ModelSerializer):
             "session", #we will read from url
         ]
         
-class ClinicalHistorySerializer(serializers.ModelSerializer):
+class ClinicalHistorySerializerAI(serializers.ModelSerializer):
     class Meta:
         model = ClinicalHistory
 
@@ -95,7 +95,7 @@ class ClinicalHistorySerializer(serializers.ModelSerializer):
             "updated_at",
         ]
 
-class AYUSHHistorySerializer(serializers.ModelSerializer):
+class AYUSHHistorySerializerAI(serializers.ModelSerializer):
     class Meta:
         model = AYUSHHistory
 
@@ -163,7 +163,7 @@ class MedicalDocumentSerializer(serializers.ModelSerializer):
         ]
         
         
-class MedicalDocumentSerializerDoctor(serializers.ModelSerializer):
+class MedicalDocumentSerializerDoctor(serializers.ModelSerializer): #send to springboot
     class Meta:
         model = MedicalDocument
 
@@ -195,6 +195,7 @@ class MedicalDocumentSerializerAI(serializers.ModelSerializer): #used by ai
         model = MedicalDocument
         fields=[
             "id",
+            "uploaded_at",
             "ocr_text",
             "ocr_status",
             "document_type",
@@ -202,7 +203,8 @@ class MedicalDocumentSerializerAI(serializers.ModelSerializer): #used by ai
             "extracted_data", #Your document-processing pipeline is supposed to extract more than OCR text. The SIH problem specifically requires extracting things such as diagnoses, medications/doses, investigations, procedures/surgeries, abnormal values, etc.
         ]
         read_only_fields = [
-            "id"
+            "id",
+            "uploaded_at",
         ]
         
         
@@ -224,6 +226,7 @@ class ClinicalSummarySerializer(serializers.ModelSerializer):
         read_only_fields = [
             "session",
             "ai_generated",
+            "verified_at", #should be read only handle this in future
             "created_at",
             "updated_at",
         ]
