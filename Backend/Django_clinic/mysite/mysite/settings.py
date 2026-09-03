@@ -144,3 +144,5 @@ REST_FRAMEWORK = {
         "rest_framework.permissions.AllowAny",
     ],
 }
+
+AI_SERVICE_API_KEY = config("AI_SERVICE_API_KEY")
