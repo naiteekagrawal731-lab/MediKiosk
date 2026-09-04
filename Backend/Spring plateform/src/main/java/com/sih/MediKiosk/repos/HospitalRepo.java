@@ -12,4 +12,6 @@ import java.util.UUID;
 public interface HospitalRepo extends JpaRepository<Hospital, UUID> {
 
     Optional<Hospital> findByUser(User user);
+
+    Optional<Hospital> findByRegistrationNumber(UUID registrationNumber);
 }

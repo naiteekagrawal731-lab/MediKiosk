@@ -4,6 +4,8 @@ package com.sih.MediKiosk.models;
 import jakarta.persistence.*;
 import lombok.*;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.UUID;
 
 @Entity
@@ -30,4 +32,11 @@ public class User {
     @Builder.Default
     private Role role = Role.PATIENT;
 
+    @OneToMany(
+            mappedBy = "user",
+            cascade = CascadeType.ALL,
+            orphanRemoval = true
+    )
+    @Builder.Default
+    private List<ClinicalSession> clinicalSessionList = new ArrayList<>();
 }

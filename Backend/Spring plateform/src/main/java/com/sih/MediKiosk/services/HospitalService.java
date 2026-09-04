@@ -5,9 +5,7 @@ import com.sih.MediKiosk.dtos.requestDtos.RegistrationRequest;
 import com.sih.MediKiosk.dtos.responseDtos.RegistrationNumberResponse;
 import com.sih.MediKiosk.exceptions.UsernameNotFound;
 import com.sih.MediKiosk.exceptions.UsernameTaken;
-import com.sih.MediKiosk.models.Hospital;
-import com.sih.MediKiosk.models.Role;
-import com.sih.MediKiosk.models.User;
+import com.sih.MediKiosk.models.*;
 import com.sih.MediKiosk.repos.HospitalRepo;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -61,4 +59,23 @@ public class HospitalService {
                         .registrationNumber(hospital.getRegistrationNumber().toString())
                 .build());
     }
+    Hospital getHospitalFromUsername(String username){
+        User user = userService.getUserByUsername(username).orElseThrow(() -> new UsernameNotFound("User with username = "+username+" does not exist"));
+
+        return hospitalRepo.findByUser(user).orElseThrow(() -> new RuntimeException("Not a valid hospital account"));
+    }
+
+    void addGuestToHospitalPermission(UUID registrationNumber, Guest guest){
+        Hospital hospital = hospitalRepo.findByRegistrationNumber(registrationNumber).orElseThrow(() -> new RuntimeException("Invalid registration number"));
+        hospital.getGuests().add(guest);
+
+        hospitalRepo.save(hospital);
+    }
+    void addUserToHospitalPermission(UUID registrationNumber, Patient patient){
+        Hospital hospital = hospitalRepo.findByRegistrationNumber(registrationNumber).orElseThrow(() -> new RuntimeException("Invalid registration number"));
+        hospital.getPatient().add(patient);
+
+        hospitalRepo.save(hospital);
+    }
+
 }

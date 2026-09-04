@@ -1,8 +1,5 @@
-package com.sih.MediKiosk.controllers;
+package com.sih.MediKiosk.exceptions;
 
-import com.sih.MediKiosk.exceptions.InvalidToken;
-import com.sih.MediKiosk.exceptions.UsernameNotFound;
-import com.sih.MediKiosk.exceptions.WrongPassword;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ExceptionHandler;

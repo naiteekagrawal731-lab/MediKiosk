@@ -28,7 +28,7 @@ public class Doctor {
     @JoinColumn(name = "hospital_id", nullable = false)
     private Hospital hospital;
 
-    @Column(nullable = false, unique = true)
+    @Column(unique = true)
     private String licenseNumber;
 
     private String specialization;

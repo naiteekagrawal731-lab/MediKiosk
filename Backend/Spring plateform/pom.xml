@@ -30,6 +30,14 @@
 		<java.version>25</java.version>
 	</properties>
 	<dependencies>
+		<!-- Swagger / OpenAPI -->
+		<dependency>
+			<groupId>org.springdoc</groupId>
+			<artifactId>springdoc-openapi-starter-webmvc-ui</artifactId>
+			<version>3.1.0</version>
+		</dependency>
+
+
 		<!-- Core Web (MVC) -->
 		<dependency>
 			<groupId>org.springframework.boot</groupId>

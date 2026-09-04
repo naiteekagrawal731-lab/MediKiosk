@@ -4,6 +4,8 @@ import lombok.*;
 import org.hibernate.annotations.Audited;
 
 
+import java.time.LocalDate;
+import java.util.List;
 import java.util.UUID;
 @Entity
 @Getter
@@ -36,6 +38,17 @@ public class Hospital {
 
     @Column(unique = true)
     private UUID registrationNumber;
+
+    private LocalDate dateOfBirth;
+
+    private String bloodGroup;
+    //Patient which the hospital has access to
+    @ManyToMany
+    private List<Patient> patient;
+
+    @ManyToMany
+    private List<Guest> guests;
+
 
     @PrePersist
     public void creatingHospital(){

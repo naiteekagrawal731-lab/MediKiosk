@@ -38,24 +38,7 @@ public class SecurityConfig {
                 .headers(headers -> headers.frameOptions(frame -> frame.sameOrigin()))
                 .sessionManagement(sem -> sem.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers(
-                                // Public endpoints
-                                "/api/login/**",
-                                "/api/auth/token",
-                                "/api/register",
-                                "/api/logout",
-
-                                // H2 Console
-                                "/h2-console/**",
-
-                                // Static assets
-                                "/",
-                                "/ping",
-                                "/public",
-                                "/error",
-                                "/favicon.ico",
-                                "/index.html",
-                                "/assets/**")
+                        .requestMatchers("/**")
                         .permitAll()
                         .anyRequest().authenticated())
                 .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class)

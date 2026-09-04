@@ -28,4 +28,6 @@ public class HospitalController {
     public ResponseEntity<RegistrationNumberResponse> getRegistrationNumber() {
         return hospitalService.getRegistrationNumber();
     }
+
+
 }

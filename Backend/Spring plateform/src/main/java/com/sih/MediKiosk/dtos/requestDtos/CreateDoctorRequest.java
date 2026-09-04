@@ -7,7 +7,10 @@ import lombok.*;
 @AllArgsConstructor
 @NoArgsConstructor
 @Builder
-public class RegistrationRequest {
+public class CreateDoctorRequest {
     private String username;
     private String password;
+    private String licenseNumber;
+    private String specialization;
+    private String qualification;
 }
