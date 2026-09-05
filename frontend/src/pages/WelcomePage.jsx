@@ -9,8 +9,10 @@ export const WelcomePage = () => {
   const navigate = useNavigate();
   const { updateSession, clearSession } = useSession();
   const [loading, setLoading] = useState(false);
+  const [errorMsg, setErrorMsg] = useState('');
 
   const handleStart = async () => {
+    setErrorMsg('');
     setLoading(true);
     // Clear any old session data first
     clearSession();
@@ -21,7 +23,7 @@ export const WelcomePage = () => {
       navigate(`/session/${session_id}/language`);
     } catch (error) {
       console.error('Error creating session:', error);
-      // Handle error gracefully
+      setErrorMsg(error.message || 'Unable to connect to the server. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -43,6 +45,10 @@ export const WelcomePage = () => {
           {loading ? 'Starting...' : 'Start'}
         </Button>
       </div>
+
+      {errorMsg && (
+        <p className="kiosk-message">{errorMsg}</p>
+      )}
     </PageContainer>
   );
 };

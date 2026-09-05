@@ -7,7 +7,7 @@ from rest_framework.parsers import MultiPartParser, FormParser, JSONParser
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from .authentication import AIServiceAuthentication
-
+from ai.services import get_next_question
 from .models import (
     ClinicalSession,
     HistoryAnswer,
@@ -219,9 +219,12 @@ class QuestionAnswerView(APIView):
             )
         
         # get answer of previous question from react
+        user_response = request.GET.get()
+        get_next_question(session_id,user_response)
+        
         # convert to text if input type is voice
         # convert text to english
-        # send to ai to get extracted information in json form
+        # send to ai to get extracted information in json form 
         # store the json info. in cache
         # get total current cache data of patient history
         # send current data of history to ai & get a question in json from ai

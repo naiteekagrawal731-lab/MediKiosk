@@ -25,6 +25,8 @@ export const RegisterPage = () => {
     bloodGroup: ''
   });
 
+  const [errorMsg, setErrorMsg] = useState('');
+
   const lang = sessionData.language || 'EN';
   const t = translations[lang];
 
@@ -36,6 +38,7 @@ export const RegisterPage = () => {
 
   const handleChoice = (selectedView) => {
     setView(selectedView);
+    setErrorMsg('');
   };
 
   const handleInputChange = (e) => {
@@ -46,26 +49,27 @@ export const RegisterPage = () => {
   const handleGuestSubmit = async (e) => {
     e.preventDefault();
     if (!formData.name.trim()) return;
-
+    setErrorMsg('');
     setLoading(true);
     try {
-      const result = await registerGuestPatient(formData);
+      const result = await registerGuestPatient(formData, sessionId);
       updateSession({ 
-        patientRegistration: { type: 'guest', ...formData, id: result.patient_id },
+        patientRegistration: { type: 'guest', ...formData },
         sessionId 
       });
       navigate(`/session/${sessionId}/treatment`);
     } catch (error) {
       console.error('Registration failed', error);
+      setErrorMsg(error.message || 'Unable to register patient. Please try again.');
     } finally {
       setLoading(false);
     }
   };
 
   const handleExistingSubmit = () => {
-    // Mock existing patient flow
+    // Placeholder for existing patient flow
     updateSession({ 
-      patientRegistration: { type: 'existing', id: 'MOCK-EXISTING-123' },
+      patientRegistration: { type: 'existing', id: 'PENDING-EXISTING-AUTH' },
       sessionId 
     });
     navigate(`/session/${sessionId}/treatment`);
@@ -159,6 +163,10 @@ export const RegisterPage = () => {
               <option value="AB-">AB-</option>
             </select>
           </div>
+
+          {errorMsg && (
+            <p className="kiosk-message" style={{ margin: '1rem 0 0 0' }}>{errorMsg}</p>
+          )}
 
           <div className="kiosk-button-row" style={{ marginTop: '2rem' }}>
             <Button onClick={() => setView('choice')} variant="outline" type="button">

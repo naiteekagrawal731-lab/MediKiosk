@@ -1,26 +1,25 @@
-// MOCK MODE is ON for frontend development
-const MOCK_MODE = true;
+const DJANGO_API_URL = import.meta.env.VITE_DJANGO_API_URL || 'http://localhost:8000';
 
 export const startClinicalSession = async (sessionId, data) => {
-  if (MOCK_MODE) {
-    console.log('[MOCK Django API] Starting clinical session for:', sessionId, 'with data:', data);
-    return new Promise((resolve) => {
-      setTimeout(() => {
-        resolve({ success: true, message: "Clinical session started." });
-      }, 500);
+  try {
+    const response = await fetch(`${DJANGO_API_URL}/api/clinical/session/${sessionId}/start/`, { 
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        language: data.language,
+        consent_given: data.consent_given,
+        treatment_type: data.treatment_type
+      })
     });
-  }
 
-  // TODO: Replace with real Django API call when ready
-  // const response = await fetch('http://localhost:8000/api/clinic/start', { 
-  //   method: 'POST',
-  //   headers: { 'Content-Type': 'application/json' },
-  //   body: JSON.stringify({
-  //     session_id: sessionId,
-  //     language: data.language,
-  //     consent_given: data.consent_given,
-  //     treatment_type: data.treatment_type
-  //   })
-  // });
-  // return response.json();
+    if (!response.ok) {
+      throw new Error(`Server returned ${response.status}: ${response.statusText}`);
+    }
+
+    const result = await response.json();
+    return { success: true, ...result };
+  } catch (error) {
+    console.error('Django API Error (startClinicalSession):', error);
+    throw new Error('Unable to connect to the server to start the clinical interview. Please try again.');
+  }
 };
