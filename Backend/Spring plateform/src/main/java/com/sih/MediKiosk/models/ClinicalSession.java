@@ -6,22 +6,24 @@ import lombok.*;
 import java.util.UUID;
 
 @Entity
+@Table(name = "clinical_sessions")
 @Getter
 @Setter
 @AllArgsConstructor
 @NoArgsConstructor
 @Builder
-
 public class ClinicalSession {
 
     @Id
     private String id;
 
-    @ManyToOne()
-    @JoinColumn(name = "user_id", nullable = false)
-    private User user;
+    private String tempData;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "patient_id")
+    private Patient patient;
 
-
-
+    @OneToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "guest_id")
+    private Guest guest;
 }

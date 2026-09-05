@@ -32,11 +32,5 @@ public class User {
     @Builder.Default
     private Role role = Role.PATIENT;
 
-    @OneToMany(
-            mappedBy = "user",
-            cascade = CascadeType.ALL,
-            orphanRemoval = true
-    )
-    @Builder.Default
-    private List<ClinicalSession> clinicalSessionList = new ArrayList<>();
+
 }

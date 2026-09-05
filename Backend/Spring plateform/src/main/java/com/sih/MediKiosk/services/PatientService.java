@@ -6,6 +6,7 @@ import com.sih.MediKiosk.models.Patient;
 import com.sih.MediKiosk.models.User;
 import com.sih.MediKiosk.repos.PatientRepo;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -18,11 +19,13 @@ public class PatientService {
     private final PatientRepo patientRepo;
     private final  RegistrationService registrationService;
     private final UserService userService;
+    private final ClinicalSessionService clinicalSessionService;
 
-    public PatientService(PatientRepo patientRepo, RegistrationService registrationService, UserService userService) {
+    public PatientService(PatientRepo patientRepo, RegistrationService registrationService, UserService userService, ClinicalSessionService clinicalSessionService) {
         this.patientRepo = patientRepo;
         this.registrationService = registrationService;
         this.userService = userService;
+        this.clinicalSessionService = clinicalSessionService;
     }
 
     @Transactional
@@ -43,5 +46,17 @@ public class PatientService {
     }
     Patient getPatientByUser(User user){
         return patientRepo.findByUser(user).orElseThrow(() -> new RuntimeException("Not a patient"));
+    }
+    @PreAuthorize("hasRole('PATIENT')")
+    Patient getPatientOfUser(){
+        User user = userService.getUserByUsername(SecurityContextHolder.getContext().getAuthentication().getName()).orElseThrow(() -> new RuntimeException("Username is invalid"));
+        return patientRepo.findByUser(user).orElseThrow(() -> new RuntimeException("Not a patient"));
+    }
+
+    //When patient want to find his clinical seasion
+    @PreAuthorize("hasRole('PATIENT')")
+    public ResponseEntity<?> getClinicalSeassion(String seassionId){
+        Patient patient = getPatientOfUser();
+        return ResponseEntity.ok().body(clinicalSessionService.getClinicalSeassionByIdAndPatient(seassionId,patient));
     }
 }

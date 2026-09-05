@@ -73,9 +73,15 @@ public class HospitalService {
     }
     void addUserToHospitalPermission(UUID registrationNumber, Patient patient){
         Hospital hospital = hospitalRepo.findByRegistrationNumber(registrationNumber).orElseThrow(() -> new RuntimeException("Invalid registration number"));
-        hospital.getPatient().add(patient);
+        hospital.getPatients().add(patient);
 
         hospitalRepo.save(hospital);
+    }
+    boolean hasPatientSessionAccess(UUID hospitalId,String sesssionId){
+        return hospitalRepo.hasPatientSessionAccess(hospitalId,sesssionId);
+    }
+    boolean hasGuestSessionAccess(UUID hospitalId,String sesssionId){
+        return hospitalRepo.hasGuestSessionAccess(hospitalId,sesssionId);
     }
 
 }

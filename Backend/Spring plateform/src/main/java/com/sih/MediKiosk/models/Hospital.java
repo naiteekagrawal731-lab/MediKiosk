@@ -42,11 +42,21 @@ public class Hospital {
     private LocalDate dateOfBirth;
 
     private String bloodGroup;
-    //Patient which the hospital has access to
-    @ManyToMany
-    private List<Patient> patient;
 
     @ManyToMany
+    @JoinTable(
+            name = "hospital_patients",
+            joinColumns = @JoinColumn(name = "hospital_id"),
+            inverseJoinColumns = @JoinColumn(name = "patient_id")
+    )
+    private List<Patient> patients;
+
+    @ManyToMany
+    @JoinTable(
+            name = "hospital_guests",
+            joinColumns = @JoinColumn(name = "hospital_id"),
+            inverseJoinColumns = @JoinColumn(name = "guest_id")
+    )
     private List<Guest> guests;
 
 

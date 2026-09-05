@@ -3,7 +3,7 @@ import jakarta.persistence.*;
 import lombok.*;
 
 
-
+import java.util.List;
 import java.util.UUID;
 import java.time.LocalDate;
 
@@ -23,6 +23,9 @@ public class Patient {
     @OneToOne
     @JoinColumn(name = "user_id", nullable = false, unique = true)
     private User user;
+
+    @OneToMany(mappedBy = "patient")
+    private List<ClinicalSession> clinicalSessions;
 
     private String gender;
 

@@ -5,10 +5,7 @@ import com.sih.MediKiosk.dtos.requestDtos.PatientLoginRequest;
 import com.sih.MediKiosk.services.PatientService;
 import com.sih.MediKiosk.services.UsernamePasswordLoginService;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/patient")
@@ -29,5 +26,10 @@ public class PatientController {
     @PostMapping("/login")
     public ResponseEntity<?> login(@RequestBody PatientLoginRequest request){
         return usernamePasswordLoginService.login(request);
+    }
+
+    @GetMapping("/clinicalsession")
+    public ResponseEntity<?> getClinicalSeasssion(@RequestBody String sessionId){
+        return patientService.getClinicalSeassion(sessionId);
     }
 }

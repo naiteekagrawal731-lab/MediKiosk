@@ -6,10 +6,7 @@ import com.sih.MediKiosk.services.DoctorService;
 import com.sih.MediKiosk.services.UsernamePasswordLoginService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/doctor")
@@ -33,5 +30,10 @@ public class DoctorController {
     @PostMapping("/login")
     public ResponseEntity<?> login(@RequestBody LoginRequest request){
         return usernamePasswordLoginService.login(request);
+    }
+
+    @GetMapping("/clinicalsession")
+    public ResponseEntity<?> getClinicalSession(@RequestBody String clinicalSessionId){
+        return doctorService.getClinicalSeassion(clinicalSessionId);
     }
 }
