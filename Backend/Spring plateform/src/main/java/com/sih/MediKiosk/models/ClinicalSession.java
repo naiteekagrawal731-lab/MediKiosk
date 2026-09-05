@@ -3,6 +3,7 @@ package com.sih.MediKiosk.models;
 import jakarta.persistence.*;
 import lombok.*;
 
+import java.time.LocalDateTime;
 import java.util.UUID;
 
 @Entity
@@ -26,4 +27,11 @@ public class ClinicalSession {
     @OneToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "guest_id")
     private Guest guest;
+
+    private LocalDateTime createdAt;
+
+    @PrePersist
+    public void create(){
+        createdAt = LocalDateTime.now();
+    }
 }

@@ -1,7 +1,10 @@
 package com.sih.MediKiosk.controllers;
 
 import com.sih.MediKiosk.dtos.requestDtos.CreatePatientRequest;
+import com.sih.MediKiosk.dtos.requestDtos.GetSessionRequest;
 import com.sih.MediKiosk.dtos.requestDtos.PatientLoginRequest;
+import com.sih.MediKiosk.dtos.responseDtos.CreateSessionResponse;
+import com.sih.MediKiosk.models.ClinicalSession;
 import com.sih.MediKiosk.services.PatientService;
 import com.sih.MediKiosk.services.UsernamePasswordLoginService;
 import org.springframework.http.ResponseEntity;
@@ -29,7 +32,12 @@ public class PatientController {
     }
 
     @GetMapping("/clinicalsession")
-    public ResponseEntity<?> getClinicalSeasssion(@RequestBody String sessionId){
-        return patientService.getClinicalSeassion(sessionId);
+    public ResponseEntity<ClinicalSession> getClinicalSeasssion(@RequestBody GetSessionRequest request){
+        return patientService.getClinicalSeassion(request);
+    }
+
+    @PostMapping("/clinicalsession")
+    public ResponseEntity<CreateSessionResponse> createSession(){
+        return patientService.createSession();
     }
 }

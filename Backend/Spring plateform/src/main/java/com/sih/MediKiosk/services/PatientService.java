@@ -1,7 +1,10 @@
 package com.sih.MediKiosk.services;
 
 import com.sih.MediKiosk.dtos.requestDtos.CreatePatientRequest;
+import com.sih.MediKiosk.dtos.requestDtos.GetSessionRequest;
+import com.sih.MediKiosk.dtos.responseDtos.CreateSessionResponse;
 import com.sih.MediKiosk.exceptions.UsernameNotFound;
+import com.sih.MediKiosk.models.ClinicalSession;
 import com.sih.MediKiosk.models.Patient;
 import com.sih.MediKiosk.models.User;
 import com.sih.MediKiosk.repos.PatientRepo;
@@ -55,8 +58,20 @@ public class PatientService {
 
     //When patient want to find his clinical seasion
     @PreAuthorize("hasRole('PATIENT')")
-    public ResponseEntity<?> getClinicalSeassion(String seassionId){
+    public ResponseEntity<ClinicalSession> getClinicalSeassion(GetSessionRequest request){
         Patient patient = getPatientOfUser();
-        return ResponseEntity.ok().body(clinicalSessionService.getClinicalSeassionByIdAndPatient(seassionId,patient));
+        return ResponseEntity.ok().body(clinicalSessionService.getClinicalSeassionByIdAndPatient(request.getSessionId(),patient));
+    }
+    @Transactional
+    public ResponseEntity<CreateSessionResponse> createSession(){
+        User user = userService.getUserByUsername(SecurityContextHolder.getContext().getAuthentication().getName()).orElseThrow(() -> new RuntimeException("Username is invalid"));
+        Patient patient = patientRepo.findByUser(user).orElseThrow(() -> new RuntimeException("Not a patient"));
+        ClinicalSession clinicalSession = clinicalSessionService.createSession();
+        clinicalSession.setPatient(patient);
+        patient.getClinicalSessions().add(clinicalSession);
+        patientRepo.save(patient);
+        return ResponseEntity.ok().body(CreateSessionResponse.builder()
+                        .sessionId(clinicalSession.getId())
+                .build());
     }
 }

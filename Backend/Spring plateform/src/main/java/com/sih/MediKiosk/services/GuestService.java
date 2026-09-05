@@ -38,7 +38,9 @@ public class GuestService {
                 .dateOfBirth(request.getDateOfBirth())
                 .bloodGroup(request.getBloodGroup())
                 .build();
+        clinicalSession.setGuest(guest);
         guestRepo.save(guest);
+
 
         hospitalService.addGuestToHospitalPermission(UUID.fromString(request.getRegistrationNumber()),guest);
 

@@ -2,6 +2,7 @@ package com.sih.MediKiosk.controllers;
 
 import com.sih.MediKiosk.dtos.requestDtos.CreateDoctorRequest;
 import com.sih.MediKiosk.dtos.requestDtos.LoginRequest;
+import com.sih.MediKiosk.models.ClinicalSession;
 import com.sih.MediKiosk.services.DoctorService;
 import com.sih.MediKiosk.services.UsernamePasswordLoginService;
 import lombok.extern.slf4j.Slf4j;
@@ -33,7 +34,7 @@ public class DoctorController {
     }
 
     @GetMapping("/clinicalsession")
-    public ResponseEntity<?> getClinicalSession(@RequestBody String clinicalSessionId){
+    public ResponseEntity<ClinicalSession> getClinicalSession(@RequestBody String clinicalSessionId){
         return doctorService.getClinicalSeassion(clinicalSessionId);
     }
 }

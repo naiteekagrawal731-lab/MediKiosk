@@ -51,7 +51,7 @@ public class DoctorService {
     }
 
     @PreAuthorize("hasRole('HOSPITAL')")
-    public ResponseEntity<?> getClinicalSeassion(String seassionId){
+    public ResponseEntity<ClinicalSession> getClinicalSeassion(String seassionId){
         String doctorName = SecurityContextHolder.getContext().getAuthentication().getName();
         User user = userService.getUserByUsername(doctorName).orElseThrow(() -> new RuntimeException("Doctor with username = "+doctorName+" does not exist"));
         Doctor doctor = doctorRepo.findByUser(user).orElseThrow(() -> new RuntimeException("Not a doctor"));

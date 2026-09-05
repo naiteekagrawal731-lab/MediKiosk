@@ -17,7 +17,7 @@ import java.util.Optional;
 import java.util.UUID;
 
 @RestController
-@RequestMapping("api/auth/token")
+@RequestMapping("/api/auth/token")
 @Slf4j
 public class AccessTokenController {
 

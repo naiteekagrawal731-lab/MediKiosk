@@ -24,7 +24,7 @@ public class Patient {
     @JoinColumn(name = "user_id", nullable = false, unique = true)
     private User user;
 
-    @OneToMany(mappedBy = "patient")
+    @OneToMany(mappedBy = "patient",cascade = CascadeType.ALL)
     private List<ClinicalSession> clinicalSessions;
 
     private String gender;
