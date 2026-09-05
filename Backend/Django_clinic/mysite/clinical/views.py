@@ -31,7 +31,6 @@ from .serializers import (
     ClinicalSummarySerializerAI,
 )
 
-
 # ============================================================
 # Helper
 # ============================================================
@@ -46,7 +45,88 @@ def get_session_or_404(session_id):
     except ClinicalSession.DoesNotExist:
         return None
 
+class StartSession(APIView):
 
+    def post(self, request, session_id):
+
+        # 1. Find session
+        session = get_session_or_404(session_id)
+        
+        if not session:
+            return Response(
+                {"error": "Clinical session not found."},
+                status=status.HTTP_404_NOT_FOUND
+            )
+
+        # 2. Get onboarding data from React
+        language = request.data.get("language")
+        consent_given = request.data.get("consent_given")
+        treatment_type = request.data.get("treatment_type")
+
+        # 3. Validate language
+        if not language:
+            return Response(
+                {"error": "Please select a language."},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        # 4. Validate consent
+        if consent_given is not True:
+            return Response(
+                {"error": "Consent is required to continue."},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        # 5. Validate treatment type
+        if not treatment_type:
+            return Response(
+                {"error": "Please select the treatment type."},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        # 6. Validate allowed values
+        valid_languages = ["EN", "HI"] # "BN", "TA", "TE"
+        valid_treatment_types = ["AYUSH", "ALLOPATHIC"]
+
+        if language not in valid_languages:
+            return Response(
+                {"error": "Invalid language selected."},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        if treatment_type not in valid_treatment_types:
+            return Response(
+                {"error": "Invalid treatment type selected."},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        # 7. Save onboarding information
+        session.language = language
+        session.consent_given = consent_given
+        session.treatment_type = treatment_type
+        session.status = "IN_PROGRESS"
+
+        session.save(
+            update_fields=[
+                "language",
+                "consent_given",
+                "treatment_type",
+                "status"
+            ]
+        )
+
+        # 8. Return success
+        return Response(
+            {
+                "message": "Clinical interview started successfully.",
+                "session_id": session.session_id,
+                "language": session.language,
+                "treatment_type": session.treatment_type,
+                "status": session.status
+            },
+            status=status.HTTP_200_OK
+        )
+            
 # ============================================================
 # SESSION
 # ============================================================
@@ -109,7 +189,6 @@ class ClinicalSessionDetailView(APIView):
     """
     GET /api/clinical/session/<session_id>/
     """
-
     def get(self, request, session_id):
 
         session = get_session_or_404(session_id)
@@ -123,60 +202,97 @@ class ClinicalSessionDetailView(APIView):
         serializer = ClinicalSessionSerializer(session)
 
         return Response(serializer.data)
-
-
-# ============================================================
-# ANSWERS
-# ============================================================
-
-class HistoryAnswerCreateView(APIView):
+    
+class QuestionAnswerView(APIView):
     """
-    POST /api/clinical/session/<session_id>/answer/
-
-    React sends:
-
-    {
-        "question_key": "chief_complaint",
-        "question_text": "What is your main problem?",
-        "answer_text": "I have chest pain",
-        "input_type": "VOICE"
-    }
-
-    Session ID comes from URL.
+    session/<str:session_id>/next-question/
+    
     """
-
-    def post(self, request, session_id):
-
+    def post(self,request,session_id):
+        
         session = get_session_or_404(session_id)
-
+        
         if not session:
             return Response(
                 {"error": "Clinical session not found."},
                 status=status.HTTP_404_NOT_FOUND
             )
+        
+        # get answer of previous question from react
+        # convert to text if input type is voice
+        # convert text to english
+        # send to ai to get extracted information in json form
+        # store the json info. in cache
+        # get total current cache data of patient history
+        # send current data of history to ai & get a question in json from ai
+        # convert ques to patient language
+        # convert text to speech
+        # send speech with text to react
 
-        serializer = HistoryAnswerSerializer(
-            data=request.data
-        )
+class QuestionsComplete(APIView):
+    """
+    session/<str:session_id>/questions-done/
+    
+    """
+    # store additional information
+    # take all cache information & store it in actual database
+    # send final data to ai & get summary
+    # store summary info in database
+    # if summary found red flag then alert
+    # send summary to springboot backend
 
-        if serializer.is_valid():
+# ============================================================
+# ANSWERS
+# ============================================================
 
-            answer = serializer.save(session=session)
+# class HistoryAnswerCreateView(APIView):
+#     """
+#     POST /api/clinical/session/<session_id>/answer/
 
-            # Move session forward
-            if session.status == "STARTED":
-                session.status = "IN_PROGRESS"
-                session.save(update_fields=["status"])
+#     React sends:
 
-            return Response(
-                HistoryAnswerSerializer(answer).data,
-                status=status.HTTP_201_CREATED
-            )
+#     {
+#         "question_key": "chief_complaint",
+#         "question_text": "What is your main problem?",
+#         "answer_text": "I have chest pain",
+#         "input_type": "VOICE"
+#     }
 
-        return Response(
-            serializer.errors,
-            status=status.HTTP_400_BAD_REQUEST
-        )
+#     Session ID comes from URL.
+#     """
+
+#     def post(self, request, session_id):
+
+#         session = get_session_or_404(session_id)
+
+#         if not session:
+#             return Response(
+#                 {"error": "Clinical session not found."},
+#                 status=status.HTTP_404_NOT_FOUND
+#             )
+
+#         serializer = HistoryAnswerSerializer(
+#             data=request.data
+#         )
+
+#         if serializer.is_valid():
+
+#             answer = serializer.save(session=session)
+
+#             # Move session forward
+#             if session.status == "STARTED":
+#                 session.status = "IN_PROGRESS"
+#                 session.save(update_fields=["status"])
+
+#             return Response(
+#                 HistoryAnswerSerializer(answer).data,
+#                 status=status.HTTP_201_CREATED
+#             )
+
+#         return Response(
+#             serializer.errors,
+#             status=status.HTTP_400_BAD_REQUEST
+#         )
 
 
 class HistoryAnswerListView(APIView):
@@ -210,150 +326,150 @@ class HistoryAnswerListView(APIView):
 # CLINICAL HISTORY
 # ============================================================
 
-class ClinicalHistoryView(APIView):
-    """
-    GET  /api/clinical/session/<session_id>/history/
-    POST /api/clinical/session/<session_id>/history/
+# class ClinicalHistoryView(APIView):
+#     """
+#     GET  /api/clinical/session/<session_id>/history/
+#     POST /api/clinical/session/<session_id>/history/
 
-    This stores the structured general clinical history.
-    """
+#     This stores the structured general clinical history.
+#     """
     
-    authentication_classes = [AIServiceAuthentication]
+#     authentication_classes = [AIServiceAuthentication]
 
-    def get(self, request, session_id):
+#     def get(self, request, session_id):
 
-        session = get_session_or_404(session_id)
+#         session = get_session_or_404(session_id)
 
-        if not session:
-            return Response(
-                {"error": "Clinical session not found."},
-                status=status.HTTP_404_NOT_FOUND
-            )
+#         if not session:
+#             return Response(
+#                 {"error": "Clinical session not found."},
+#                 status=status.HTTP_404_NOT_FOUND
+#             )
 
-        try:
-            history = session.history
-        except ClinicalHistory.DoesNotExist:
-            return Response(
-                {"message": "Clinical history not created yet."},
-                status=status.HTTP_404_NOT_FOUND
-            )
+#         try:
+#             history = session.history
+#         except ClinicalHistory.DoesNotExist:
+#             return Response(
+#                 {"message": "Clinical history not created yet."},
+#                 status=status.HTTP_404_NOT_FOUND
+#             )
 
-        serializer = ClinicalHistorySerializerAI(history)
+#         serializer = ClinicalHistorySerializerAI(history)
 
-        return Response(serializer.data)
+#         return Response(serializer.data)
 
-    def post(self, request, session_id):
+#     def post(self, request, session_id):
 
-        session = get_session_or_404(session_id)
+#         session = get_session_or_404(session_id)
 
-        if not session:
-            return Response(
-                {"error": "Clinical session not found."},
-                status=status.HTTP_404_NOT_FOUND
-            )
+#         if not session:
+#             return Response(
+#                 {"error": "Clinical session not found."},
+#                 status=status.HTTP_404_NOT_FOUND
+#             )
 
-        try:
-            history = session.history
+#         try:
+#             history = session.history
 
-            serializer = ClinicalHistorySerializerAI(
-                history,
-                data=request.data,
-                partial=True
-            )
+#             serializer = ClinicalHistorySerializerAI(
+#                 history,
+#                 data=request.data,
+#                 partial=True
+#             )
 
-        except ClinicalHistory.DoesNotExist:
+#         except ClinicalHistory.DoesNotExist:
 
-            serializer = ClinicalHistorySerializerAI(
-                data=request.data
-            )
+#             serializer = ClinicalHistorySerializerAI(
+#                 data=request.data
+#             )
 
-        if serializer.is_valid():
+#         if serializer.is_valid():
 
-            history = serializer.save(session=session)
+#             history = serializer.save(session=session)
 
-            return Response(
-                ClinicalHistorySerializerAI(history).data,
-                status=status.HTTP_200_OK
-            )
+#             return Response(
+#                 ClinicalHistorySerializerAI(history).data,
+#                 status=status.HTTP_200_OK
+#             )
 
-        return Response(
-            serializer.errors,
-            status=status.HTTP_400_BAD_REQUEST
-        )
+#         return Response(
+#             serializer.errors,
+#             status=status.HTTP_400_BAD_REQUEST
+#         )
 
 
 # ============================================================
 # AYUSH HISTORY
 # ============================================================
 
-class AYUSHHistoryView(APIView):
-    """
-    GET  /api/clinical/session/<session_id>/ayush/
-    POST /api/clinical/session/<session_id>/ayush/
-    """
+# class AYUSHHistoryView(APIView):
+#     """
+#     GET  /api/clinical/session/<session_id>/ayush/
+#     POST /api/clinical/session/<session_id>/ayush/
+#     """
     
-    authentication_classes = [AIServiceAuthentication]
+#     authentication_classes = [AIServiceAuthentication]
 
-    def get(self, request, session_id):
+#     def get(self, request, session_id):
 
-        session = get_session_or_404(session_id)
+#         session = get_session_or_404(session_id)
 
-        if not session:
-            return Response(
-                {"error": "Clinical session not found."},
-                status=status.HTTP_404_NOT_FOUND
-            )
+#         if not session:
+#             return Response(
+#                 {"error": "Clinical session not found."},
+#                 status=status.HTTP_404_NOT_FOUND
+#             )
 
-        try:
-            ayush_history = session.ayush_history
-        except AYUSHHistory.DoesNotExist:
-            return Response(
-                {"message": "AYUSH history not created yet."},
-                status=status.HTTP_404_NOT_FOUND
-            )
+#         try:
+#             ayush_history = session.ayush_history
+#         except AYUSHHistory.DoesNotExist:
+#             return Response(
+#                 {"message": "AYUSH history not created yet."},
+#                 status=status.HTTP_404_NOT_FOUND
+#             )
 
-        serializer = AYUSHHistorySerializerAI(ayush_history)
+#         serializer = AYUSHHistorySerializerAI(ayush_history)
 
-        return Response(serializer.data)
+#         return Response(serializer.data)
 
-    def post(self, request, session_id):
+#     def post(self, request, session_id):
 
-        session = get_session_or_404(session_id)
+#         session = get_session_or_404(session_id)
 
-        if not session:
-            return Response(
-                {"error": "Clinical session not found."},
-                status=status.HTTP_404_NOT_FOUND
-            )
+#         if not session:
+#             return Response(
+#                 {"error": "Clinical session not found."},
+#                 status=status.HTTP_404_NOT_FOUND
+#             )
 
-        try:
-            ayush_history = session.ayush_history
+#         try:
+#             ayush_history = session.ayush_history
 
-            serializer = AYUSHHistorySerializerAI(
-                ayush_history,
-                data=request.data,
-                partial=True
-            )
+#             serializer = AYUSHHistorySerializerAI(
+#                 ayush_history,
+#                 data=request.data,
+#                 partial=True
+#             )
 
-        except AYUSHHistory.DoesNotExist:
+#         except AYUSHHistory.DoesNotExist:
 
-            serializer = AYUSHHistorySerializerAI(
-                data=request.data
-            )
+#             serializer = AYUSHHistorySerializerAI(
+#                 data=request.data
+#             )
 
-        if serializer.is_valid():
+#         if serializer.is_valid():
 
-            ayush_history = serializer.save(session=session)
+#             ayush_history = serializer.save(session=session)
 
-            return Response(
-                AYUSHHistorySerializerAI(ayush_history).data,
-                status=status.HTTP_200_OK
-            )
+#             return Response(
+#                 AYUSHHistorySerializerAI(ayush_history).data,
+#                 status=status.HTTP_200_OK
+#             )
 
-        return Response(
-            serializer.errors,
-            status=status.HTTP_400_BAD_REQUEST
-        )
+#         return Response(
+#             serializer.errors,
+#             status=status.HTTP_400_BAD_REQUEST
+#         )
 
 
 # ============================================================
@@ -411,64 +527,64 @@ class MedicalDocumentUploadView(APIView):
 # AI DOCUMENT UPDATE
 # ============================================================
 
-class MedicalDocumentAIUpdateView(APIView):
-    """
-    POST /api/clinical/session/<session_id>/document/<int:document_id>/ai/
+# class MedicalDocumentAIUpdateView(APIView):
+#     """
+#     POST /api/clinical/session/<session_id>/document/<int:document_id>/ai/
 
-    AI/OCR service sends extracted information.
+#     AI/OCR service sends extracted information.
 
-    Example:
-    {
-        "ocr_text": "...",
-        "ocr_status": "COMPLETED",
-        "document_type": "Prescription",
-        "document_date": "2026-09-01",
-        "extracted_data": {}
-    }
-    """
+#     Example:
+#     {
+#         "ocr_text": "...",
+#         "ocr_status": "COMPLETED",
+#         "document_type": "Prescription",
+#         "document_date": "2026-09-01",
+#         "extracted_data": {}
+#     }
+#     """
     
-    authentication_classes = [AIServiceAuthentication]
+#     authentication_classes = [AIServiceAuthentication]
 
-    def post(self, request, session_id, document_id):
+#     def post(self, request, session_id, document_id):
 
-        session = get_session_or_404(session_id)
+#         session = get_session_or_404(session_id)
 
-        if not session:
-            return Response(
-                {"error": "Clinical session not found."},
-                status=status.HTTP_404_NOT_FOUND
-            )
+#         if not session:
+#             return Response(
+#                 {"error": "Clinical session not found."},
+#                 status=status.HTTP_404_NOT_FOUND
+#             )
 
-        try:
-            document = MedicalDocument.objects.get(
-                id=document_id,
-                session=session
-            )
-        except MedicalDocument.DoesNotExist:
-            return Response(
-                {"error": "Medical document not found."},
-                status=status.HTTP_404_NOT_FOUND
-            )
+#         try:
+#             document = MedicalDocument.objects.get(
+#                 id=document_id,
+#                 session=session
+#             )
+#         except MedicalDocument.DoesNotExist:
+#             return Response(
+#                 {"error": "Medical document not found."},
+#                 status=status.HTTP_404_NOT_FOUND
+#             )
 
-        serializer = MedicalDocumentSerializerAI(
-            document,
-            data=request.data,
-            partial=True
-        )
+#         serializer = MedicalDocumentSerializerAI(
+#             document,
+#             data=request.data,
+#             partial=True
+#         )
 
-        if serializer.is_valid():
+#         if serializer.is_valid():
 
-            document = serializer.save()
+#             document = serializer.save()
 
-            return Response(
-                MedicalDocumentSerializerAI(document).data,
-                status=status.HTTP_200_OK
-            )
+#             return Response(
+#                 MedicalDocumentSerializerAI(document).data,
+#                 status=status.HTTP_200_OK
+#             )
 
-        return Response(
-            serializer.errors,
-            status=status.HTTP_400_BAD_REQUEST
-        )
+#         return Response(
+#             serializer.errors,
+#             status=status.HTTP_400_BAD_REQUEST
+#         )
 
 
 # ============================================================
@@ -503,39 +619,37 @@ class MedicalDocumentListView(APIView):
 
         return Response(serializer.data)
     
-# ============================================================
-# MEDICAL DOCUMENT LIST For AI
-# ============================================================
+# # ============================================================
+# # MEDICAL DOCUMENT LIST For AI
+# # ============================================================
 
-class MedicalDocumentListViewAI(APIView):
-    """
-    GET /api/clinical/session/<session_id>/documents/
+# class MedicalDocumentListViewAI(APIView):
+#     """
+#     GET /api/clinical/session/<session_id>/documents/
 
-    Used by patient/frontend to view uploaded documents.
-    """
-    
-    authentication_classes = [AIServiceAuthentication]
+#     Used by patient/frontend to view uploaded documents.
+#     """
 
-    def get(self, request, session_id):
+#     def get(self, request, session_id):
 
-        session = get_session_or_404(session_id)
+#         session = get_session_or_404(session_id)
 
-        if not session:
-            return Response(
-                {"error": "Clinical session not found."},
-                status=status.HTTP_404_NOT_FOUND
-            )
+#         if not session:
+#             return Response(
+#                 {"error": "Clinical session not found."},
+#                 status=status.HTTP_404_NOT_FOUND
+#             )
 
-        documents = MedicalDocument.objects.filter(
-            session=session
-        ).order_by("-uploaded_at")
+#         documents = MedicalDocument.objects.filter(
+#             session=session
+#         ).order_by("-uploaded_at")
 
-        serializer = MedicalDocumentSerializerAI(
-            documents,
-            many=True
-        )
+#         serializer = MedicalDocumentSerializerAI(
+#             documents,
+#             many=True
+#         )
 
-        return Response(serializer.data)
+#         return Response(serializer.data)
     
 # ============================================================
 # MEDICAL DOCUMENT LIST View FOR SPRINGBOOT
@@ -575,62 +689,62 @@ class MedicalDocumentListViewSpring(APIView):
 # AI SUMMARY UPDATE
 # ============================================================
 
-class ClinicalSummaryAIUpdateView(APIView):
-    """
-    POST /api/clinical/session/<session_id>/summary/ai/
+# class ClinicalSummaryAIUpdateView(APIView):
+#     """
+#     POST /api/clinical/session/<session_id>/summary/ai/
 
-    AI sends the final structured summary.
+#     AI sends the final structured summary.
 
-    Example:
-    {
-        "summary_data": {
-            ...
-        },
-        "ai_generated": true
-    }
-    """
+#     Example:
+#     {
+#         "summary_data": {
+#             ...
+#         },
+#         "ai_generated": true
+#     }
+#     """
     
-    authentication_classes = [AIServiceAuthentication]
+#     authentication_classes = [AIServiceAuthentication]
 
-    def post(self, request, session_id):
+#     def post(self, request, session_id):
 
-        session = get_session_or_404(session_id)
+#         session = get_session_or_404(session_id)
 
-        if not session:
-            return Response(
-                {"error": "Clinical session not found."},
-                status=status.HTTP_404_NOT_FOUND
-            )
+#         if not session:
+#             return Response(
+#                 {"error": "Clinical session not found."},
+#                 status=status.HTTP_404_NOT_FOUND
+#             )
 
-        serializer = ClinicalSummarySerializerAI(
-            data=request.data
-        )
+#         serializer = ClinicalSummarySerializerAI(
+#             data=request.data
+#         )
 
-        if serializer.is_valid():
+#         if serializer.is_valid():
 
-            summary, created = ClinicalSummary.objects.update_or_create(
-                session=session,
-                defaults={
-                    "summary_data": serializer.validated_data.get(
-                        "summary_data",
-                        {}
-                    ),
-                    "ai_generated": serializer.validated_data.get(
-                        "ai_generated",
-                        True
-                    ),
-                }
-            )
+#             summary, created = ClinicalSummary.objects.update_or_create(
+#                 session=session,
+#                 defaults={
+#                     "summary_data": serializer.validated_data.get(
+#                         "summary_data",
+#                         {}
+#                     ),
+#                     "ai_generated": serializer.validated_data.get(
+#                         "ai_generated",
+#                         True
+#                     ),
+#                 }
+#             )
 
-            return Response(
-                ClinicalSummarySerializer(summary).data,
-                status=status.HTTP_200_OK
-            )
+#             return Response(
+#                 ClinicalSummarySerializer(summary).data,
+#                 status=status.HTTP_200_OK
+#             )
 
-        return Response(
-            serializer.errors,
-            status=status.HTTP_400_BAD_REQUEST
-        )
+#         return Response(
+#             serializer.errors,
+#             status=status.HTTP_400_BAD_REQUEST
+#         )
 
 
 # ============================================================
@@ -641,7 +755,7 @@ class ClinicalSummaryView(APIView):
     """
     GET /api/clinical/session/<session_id>/summary/
 
-    Doctor/frontend retrieves the final summary.
+    springboot retrieves the final summary.
     """
 
     def get(self, request, session_id):

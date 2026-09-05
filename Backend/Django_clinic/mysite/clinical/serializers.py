@@ -16,6 +16,9 @@ class ClinicalSessionSerializer(serializers.ModelSerializer):
         fields = [
             "session_id",
             "status",
+            "language",
+            "consent_given",
+            "treatment_type",
             "red_flag_detected",
             "red_flag_data",
             "started_at",

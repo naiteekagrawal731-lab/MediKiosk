@@ -19,6 +19,37 @@ class ClinicalSession(models.Model):
         default="STARTED"
     )
     
+    TREATMENT_TYPE_CHOICES = [
+        ("ALLOPATHIC", "Allopathic"),
+        ("AYUSH", "AYUSH"),
+    ]
+
+    LANGUAGE_CHOICES = [
+        ("EN", "English"),
+        ("HI", "Hindi"),
+        # add the languages you actually support
+        # ("BN", "Bengali"),
+        # ("TA", "Tamil"),
+        # ("TE", "Telugu"),
+    ]
+
+    treatment_type = models.CharField(
+        max_length=20,
+        choices=TREATMENT_TYPE_CHOICES,
+        blank=True
+    )
+    
+    language = models.CharField(
+        max_length=15,
+        choices=LANGUAGE_CHOICES,
+        blank=True
+    )
+    
+    
+    consent_given = models.BooleanField(
+        default=False
+    )
+    
     red_flag_detected = models.BooleanField(default=False)
 
     red_flag_data = models.JSONField(
