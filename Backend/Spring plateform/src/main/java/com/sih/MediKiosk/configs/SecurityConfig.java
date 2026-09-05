@@ -38,7 +38,15 @@ public class SecurityConfig {
                 .headers(headers -> headers.frameOptions(frame -> frame.sameOrigin()))
                 .sessionManagement(sem -> sem.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/**")
+                        .requestMatchers(
+                                "/api/auth/**",
+                                "/doctor/login",
+                                "/guest/**",
+                                "/hospital/create",
+                                "/api/logout",
+                                "/patient/create",
+                                "/patient/login"
+                        )
                         .permitAll()
                         .anyRequest().authenticated())
                 .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class)
