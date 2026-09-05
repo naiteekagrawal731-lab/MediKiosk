@@ -1,0 +1,248 @@
+:root {
+  --primary-color: #0ea5e9;
+  --primary-dark: #0284c7;
+  --bg-color: #f0fdfa;
+  --card-bg: #ffffff;
+  --text-main: #0f172a;
+  --text-muted: #64748b;
+  --border-color: #e2e8f0;
+  
+  --font-family: 'Inter', system-ui, -apple-system, sans-serif;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: var(--font-family);
+  background-color: var(--bg-color);
+  color: var(--text-main);
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Page Container */
+.kiosk-page-container {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem;
+}
+
+.kiosk-page-content {
+  background-color: var(--card-bg);
+  width: 100%;
+  max-width: 900px;
+  border-radius: 24px;
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.05), 0 8px 10px -6px rgba(0, 0, 0, 0.01);
+  padding: 4rem 3rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  animation: fadeIn 0.4s ease-out forwards;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* Typography */
+.kiosk-title {
+  font-size: 3.5rem;
+  font-weight: 800;
+  color: var(--primary-color);
+  margin-bottom: 1rem;
+  letter-spacing: -0.025em;
+}
+
+.kiosk-subtitle {
+  font-size: 1.5rem;
+  color: var(--text-muted);
+  margin-bottom: 3rem;
+  font-weight: 400;
+}
+
+.kiosk-question {
+  font-size: 2.25rem;
+  font-weight: 700;
+  color: var(--text-main);
+  margin-bottom: 3rem;
+  line-height: 1.3;
+}
+
+/* Progress Indicator */
+.kiosk-progress-container {
+  width: 100%;
+  margin-bottom: 3rem;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+}
+
+.kiosk-progress-text {
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  margin-bottom: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.kiosk-progress-bar-bg {
+  width: 100%;
+  height: 12px;
+  background-color: var(--border-color);
+  border-radius: 9999px;
+  overflow: hidden;
+}
+
+.kiosk-progress-bar-fill {
+  height: 100%;
+  background-color: var(--primary-color);
+  border-radius: 9999px;
+  transition: width 0.5s ease-out;
+}
+
+/* Buttons */
+.kiosk-btn {
+  width: 100%;
+  padding: 1.5rem 2rem;
+  font-size: 1.75rem;
+  font-weight: 600;
+  border-radius: 20px;
+  border: none;
+  cursor: pointer;
+  transition: all 0.2s ease-in-out;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+}
+
+.kiosk-btn:active {
+  transform: scale(0.97);
+}
+
+.kiosk-btn-primary {
+  background-color: var(--primary-color);
+  color: white;
+  box-shadow: 0 10px 15px -3px rgba(14, 165, 233, 0.3);
+}
+
+.kiosk-btn-primary:hover {
+  background-color: var(--primary-dark);
+}
+
+.kiosk-btn-secondary {
+  background-color: #f1f5f9;
+  color: var(--text-main);
+}
+
+.kiosk-btn-secondary:hover {
+  background-color: #e2e8f0;
+}
+
+.kiosk-btn-outline {
+  background-color: transparent;
+  border: 3px solid var(--primary-color);
+  color: var(--primary-color);
+}
+
+.kiosk-btn-outline:hover {
+  background-color: #f0f9ff;
+}
+
+/* Button Layouts */
+.kiosk-button-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  width: 100%;
+  max-width: 600px;
+}
+
+.kiosk-button-row {
+  display: flex;
+  gap: 1.5rem;
+  width: 100%;
+  max-width: 600px;
+}
+
+.kiosk-button-row .kiosk-btn {
+  flex: 1;
+}
+
+/* Speaker Button */
+.kiosk-speaker-btn {
+  background: none;
+  border: none;
+  color: var(--primary-color);
+  cursor: pointer;
+  padding: 1rem;
+  border-radius: 50%;
+  transition: all 0.2s;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 2rem;
+}
+
+.kiosk-speaker-btn:hover {
+  background-color: #e0f2fe;
+}
+
+.kiosk-speaker-btn:active {
+  transform: scale(0.9);
+}
+
+/* Forms */
+.kiosk-form {
+  width: 100%;
+  max-width: 600px;
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  text-align: left;
+}
+
+.kiosk-form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.kiosk-label {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: var(--text-main);
+}
+
+.kiosk-input {
+  width: 100%;
+  padding: 1.25rem;
+  font-size: 1.5rem;
+  border: 2px solid var(--border-color);
+  border-radius: 16px;
+  transition: border-color 0.2s;
+  font-family: inherit;
+}
+
+.kiosk-input:focus {
+  outline: none;
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 4px rgba(14, 165, 233, 0.1);
+}
+
+/* Error/Info messages */
+.kiosk-message {
+  margin-top: 2rem;
+  font-size: 1.25rem;
+  color: #ef4444;
+  font-weight: 500;
+}

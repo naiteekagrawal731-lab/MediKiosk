@@ -1,0 +1,42 @@
+export const translations = {
+  EN: {
+    languageQuestion: "Please select your preferred language",
+    consentQuestion: "Do you give consent for MediKiosk to securely store and process your medical information for your medical consultation?",
+    yesConsent: "Yes, I give consent",
+    noConsent: "No, I do not give consent",
+    consentRequired: "Consent is required to continue.",
+    existingPatientQuestion: "Do you already have an account?",
+    existingPatient: "Existing Patient",
+    guest: "Continue as Guest",
+    nameLabel: "Your Name",
+    ageLabel: "Your Age",
+    mobileLabel: "Mobile Number",
+    dobLabel: "Date of Birth",
+    bloodGroupLabel: "Blood Group",
+    continueBtn: "Continue",
+    treatmentQuestion: "What type of treatment are you seeking?",
+    ayush: "AYUSH (Ayurvedic)",
+    allopathic: "Allopathic",
+    interviewPlaceholder: "Clinical interview will begin here."
+  },
+  HI: {
+    languageQuestion: "कृपया अपनी पसंदीदा भाषा चुनें",
+    consentQuestion: "क्या आप अपनी चिकित्सा जानकारी को सुरक्षित रूप से संग्रहीत और संसाधित करने के लिए सहमति देते हैं?",
+    yesConsent: "हाँ, मैं सहमत हूँ",
+    noConsent: "नहीं",
+    consentRequired: "आगे बढ़ने के लिए सहमति आवश्यक है।",
+    existingPatientQuestion: "क्या आपका पहले से खाता है?",
+    existingPatient: "मौजूदा मरीज",
+    guest: "अतिथि के रूप में जारी रखें",
+    nameLabel: "आपका नाम",
+    ageLabel: "आपकी उम्र",
+    mobileLabel: "मोबाइल नंबर",
+    dobLabel: "जन्म तिथि",
+    bloodGroupLabel: "ब्लड ग्रुप",
+    continueBtn: "जारी रखें",
+    treatmentQuestion: "आप किस प्रकार का उपचार चाहते हैं?",
+    ayush: "आयुष (आयुर्वेदिक)",
+    allopathic: "एलोपैथिक",
+    interviewPlaceholder: "क्लीनिकल इंटरव्यू यहाँ शुरू होगा।"
+  }
+};
