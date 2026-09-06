@@ -7,14 +7,22 @@ from clinical.models import (
     AYUSHHistory,
 )
 
-from gemini import process_patient_answer
+from .gemini import process_allopathic_answer,process_ayush_answer
 
-from sarvam import (
+from .sarvam import (
     speech_to_text,
     text_to_speech,
 )
 
-from clinical.views import get_session_or_404
+def get_session_or_404(session_id):
+    """
+    Get a ClinicalSession using the session ID generated
+    by the Spring Boot backend.
+    """
+    try:
+        return ClinicalSession.objects.get(session_id=session_id)
+    except ClinicalSession.DoesNotExist:
+        return None
 
 from clinical.serializers import (
     ClinicalHistorySerializerAI,
@@ -240,7 +248,7 @@ def get_next_question(
           ↓
         Gemini
           ↓
-        extracted_info + next_ques
+        extracted_info + next_ques + button_options
           ↓
         PATCH correct history table
           ↓
@@ -289,38 +297,32 @@ def get_next_question(
     # ========================================================
     # 3. SEND EVERYTHING TO GEMINI
     # ========================================================
-    #
-    # Gemini receives:
-    #
-    # - current database information
-    # - previous question
-    # - latest patient answer
-    # - language
-    # - treatment type
-    #
-    # Gemini returns:
-    #
-    # {
-    #     "extracted_info": {
-    #         "chief_complaint": "fever",
-    #         "complaint_duration": "since last night"
-    #     },
-    #
-    #     "next_ques": {
-    #         "question_key": "severity",
-    #         "question_text": "How severe is your fever?"
-    #     }
-    # }
-    #
 
-    result = process_patient_answer(
-        data=data,
-        user_response=answer_text,
-        language=session.language,
-        treatment_type=session.treatment_type,
-        previous_question_key=question_key,
-        previous_question_text=question_text,
-    )
+    if session.treatment_type == "ALLOPATHIC":
+
+        result = process_allopathic_answer(
+            data=data,
+            user_response=answer_text,
+            language=session.language,
+            previous_question_key=question_key,
+            previous_question_text=question_text,
+        )
+
+    elif session.treatment_type == "AYUSH":
+
+        result = process_ayush_answer(
+            data=data,
+            user_response=answer_text,
+            language=session.language,
+            previous_question_key=question_key,
+            previous_question_text=question_text,
+        )
+
+    else:
+
+        raise ValueError(
+            f"Invalid treatment type: {session.treatment_type}"
+        )
 
     # ========================================================
     # 4. EXTRACT INFORMATION
@@ -331,30 +333,12 @@ def get_next_question(
         {}
     )
 
-    # Safety check
     if not isinstance(extracted_info, dict):
         extracted_info = {}
 
     # ========================================================
     # 5. PATCH THE CORRECT HISTORY
     # ========================================================
-    #
-    # IMPORTANT:
-    #
-    # ALLOPATHIC:
-    # extracted_info directly contains ClinicalHistory fields.
-    #
-    # AYUSH:
-    # extracted_info directly contains AYUSHHistory fields.
-    #
-    # There is NO:
-    #
-    # extracted_info["ayush_history"]
-    #
-    # or
-    #
-    # extracted_info["clinical_history"]
-    #
 
     if session.treatment_type == "ALLOPATHIC":
 
@@ -374,22 +358,30 @@ def get_next_question(
     # 6. SAVE PATIENT'S ACTUAL ANSWER
     # ========================================================
 
-    save_history_answer(
-        session=session,
-        question_key=question_key,
-        question_text=question_text,
-        answer_text=answer_text,
-        input_type=input_type,
-    )
+    # Don't create an empty answer record for the initial
+    # question request.
+
+    if answer_text:
+
+        save_history_answer(
+            session=session,
+            question_key=question_key,
+            question_text=question_text,
+            answer_text=answer_text,
+            input_type=input_type,
+        )
 
     # ========================================================
-    # 7. GET NEXT QUESTION
+    # 7. GET NEXT QUESTION FROM GEMINI
     # ========================================================
 
     next_ques = result.get(
         "next_ques",
         {}
     )
+
+    if not isinstance(next_ques, dict):
+        next_ques = {}
 
     next_question_key = next_ques.get(
         "question_key",
@@ -402,21 +394,47 @@ def get_next_question(
     )
 
     # ========================================================
-    # 8. CHECK IF INTERVIEW IS FINISHED
+    # 8. GET BUTTON OPTIONS
+    # ========================================================
+
+    button_options = next_ques.get(
+        "button_options",
+        []
+    )
+
+    # Safety check
+    if not isinstance(button_options, list):
+        button_options = []
+
+    # Maximum 4 buttons
+    button_options = button_options[:4]
+
+    # Remove empty options
+    button_options = [
+        str(option).strip()
+        for option in button_options
+        if option and str(option).strip()
+    ]
+
+    # ========================================================
+    # 9. CHECK IF INTERVIEW IS FINISHED
     # ========================================================
 
     if next_question_key == "last_question":
+
+        session.status = "COMPLETED"
+        session.save(update_fields=["status"])
 
         return {
             "question_key": "last_question",
             "question_text": "",
             "question_audio": None,
+            "button_options": [],
             "is_final": True,
-            "extracted_info": extracted_info,
         }
 
     # ========================================================
-    # 9. TEXT → SPEECH
+    # 10. TEXT → SPEECH
     # ========================================================
 
     question_audio = None
@@ -425,10 +443,16 @@ def get_next_question(
 
         try:
 
-            question_audio = text_to_speech(
+            tts_response = text_to_speech(
                 next_question_text,
                 session.language,
             )
+
+            if isinstance(tts_response, dict):
+
+                question_audio = tts_response.get(
+                    "audio_base64"
+                )
 
         except Exception as e:
 
@@ -438,13 +462,13 @@ def get_next_question(
             )
 
     # ========================================================
-    # 10. RETURN TO VIEW
+    # 11. RETURN TO VIEW
     # ========================================================
 
     return {
         "question_key": next_question_key,
         "question_text": next_question_text,
         "question_audio": question_audio,
+        "button_options": button_options,
         "is_final": False,
-        "extracted_info": extracted_info,
     }

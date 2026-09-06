@@ -6,7 +6,8 @@ from .views import (
     StartSession,
     QuestionAnswerView,
     QuestionsComplete,
-    HistoryAnswerCreateView,
+    Getsession,
+    
     HistoryAnswerListView,
 
     # ClinicalHistoryView,
@@ -15,7 +16,7 @@ from .views import (
     MedicalDocumentUploadView,
     # MedicalDocumentAIUpdateView,
     MedicalDocumentListView,
-    MedicalDocumentListViewAI,
+    #MedicalDocumentListViewAI,
 
     # ClinicalSummaryAIUpdateView,
     ClinicalSummaryView,
@@ -29,6 +30,8 @@ urlpatterns = [
     # ========================================================
     # SESSION
     # ========================================================
+    
+    path("patient/clinicalsession",Getsession.as_view(),name="get-session-id"),
 
     path(
         "session/",
@@ -37,7 +40,7 @@ urlpatterns = [
     ),
     
     path(
-        "api/clinical/session/<str:session_id>/start/",
+        "session/<str:session_id>/start/",
         StartSession.as_view()
     ),
 

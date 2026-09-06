@@ -60,16 +60,9 @@ def speech_to_text(audio_file, language="EN"):
 # ==================================================
 # TEXT TO SPEECH
 # ==================================================
+import base64
 
 def text_to_speech(text, language="EN"):
-    """
-    Convert text to speech.
-
-    language:
-        EN -> English
-        HI -> Hindi
-    """
-
     language_code = get_language_code(language)
 
     response = client.text_to_speech.convert(
@@ -81,7 +74,19 @@ def text_to_speech(text, language="EN"):
         speech_sample_rate=24000,
     )
 
-    return response
+    # Sarvam returns audio in response.audios
+    if not response.audios:
+        raise ValueError("Sarvam TTS returned no audio")
+
+    audio_base64 = response.audios[0]
+
+    return {
+        "audio_base64": audio_base64,
+        "content_type": "audio/wav",
+    }
+    
+    #If your installed Sarvam SDK returns the audio as raw bytes rather than a base64 string, use:
+    # audio_base64 = base64.b64encode(response.audios[0]).decode("utf-8")
 
 
 # # ==================================================

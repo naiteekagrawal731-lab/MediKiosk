@@ -52,7 +52,7 @@ export const RegisterPage = () => {
     setErrorMsg('');
     setLoading(true);
     try {
-      const result = await registerGuestPatient(formData, sessionId);
+      // const result = await registerGuestPatient(formData, sessionId);
       updateSession({ 
         patientRegistration: { type: 'guest', ...formData },
         sessionId 
@@ -78,7 +78,7 @@ export const RegisterPage = () => {
   if (view === 'existing') {
     return (
       <PageContainer>
-        <ProgressIndicator step={3} total={5} />
+        <ProgressIndicator step={3} total={4} />
         <h2 className="kiosk-question">Existing patient login will be connected to the Spring Boot patient account system.</h2>
         <div className="kiosk-button-grid">
           <Button onClick={handleExistingSubmit} variant="primary">
@@ -95,7 +95,7 @@ export const RegisterPage = () => {
   if (view === 'guest') {
     return (
       <PageContainer>
-        <ProgressIndicator step={3} total={5} />
+        <ProgressIndicator step={3} total={4} />
         <h2 className="kiosk-question" style={{ marginBottom: '1.5rem' }}>{t.guest}</h2>
         
         <form onSubmit={handleGuestSubmit} className="kiosk-form">
@@ -183,7 +183,7 @@ export const RegisterPage = () => {
 
   return (
     <PageContainer>
-      <ProgressIndicator step={3} total={5} />
+      <ProgressIndicator step={3} total={4} />
       
       <SpeakerButton onClick={() => speak(t.existingPatientQuestion, lang)} />
       <h2 className="kiosk-question">{t.existingPatientQuestion}</h2>

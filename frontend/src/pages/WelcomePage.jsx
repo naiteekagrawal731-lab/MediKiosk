@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { PageContainer } from '../components/PageContainer';
 import { Button } from '../components/Button';
 import { createSession } from '../services/springApi';
+import { createDjangoSession } from '../services/djangoApi';
 import { useSession } from '../context/SessionContext';
 
 export const WelcomePage = () => {
@@ -19,6 +20,7 @@ export const WelcomePage = () => {
     
     try {
       const { session_id } = await createSession();
+      await createDjangoSession(session_id);
       updateSession({ sessionId: session_id });
       navigate(`/session/${session_id}/language`);
     } catch (error) {

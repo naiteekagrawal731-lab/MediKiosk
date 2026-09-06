@@ -4,12 +4,14 @@ export const createSession = async () => {
   try {
     // We assume the real endpoint is /patient/clinicalsession based on inspection, 
     // but could be easily changed here if the backend changes.
-    const response = await fetch(`${SPRING_API_URL}/patient/clinicalsession`, {
+    const response = await fetch(`${SPRING_API_URL}/api/clinical/patient/clinicalsession`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
       }
     });
+
+    console.log(response)
 
     if (!response.ok) {
       throw new Error(`Server returned ${response.status}: ${response.statusText}`);

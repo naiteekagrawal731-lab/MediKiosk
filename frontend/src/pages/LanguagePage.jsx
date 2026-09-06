@@ -29,7 +29,7 @@ export const LanguagePage = () => {
 
   return (
     <PageContainer>
-      <ProgressIndicator step={1} total={5} />
+      <ProgressIndicator step={1} total={4} />
       
       <SpeakerButton onClick={() => speak(t.languageQuestion, 'EN')} />
       <h2 className="kiosk-question">{t.languageQuestion}</h2>

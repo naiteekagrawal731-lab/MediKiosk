@@ -6,7 +6,7 @@ from rest_framework import status
 from rest_framework.parsers import MultiPartParser, FormParser, JSONParser
 from rest_framework.response import Response
 from rest_framework.views import APIView
-from .authentication import AIServiceAuthentication
+# from .authentication import AIServiceAuthentication
 from ai.services import get_next_question
 from .models import (
     ClinicalSession,
@@ -44,6 +44,10 @@ def get_session_or_404(session_id):
         return ClinicalSession.objects.get(session_id=session_id)
     except ClinicalSession.DoesNotExist:
         return None
+    
+class Getsession(APIView):
+    def post(self,request):
+        return Response({"session_id":"ABKDJHCL"})
 
 class StartSession(APIView):
 
@@ -204,33 +208,41 @@ class ClinicalSessionDetailView(APIView):
         return Response(serializer.data)
     
 class QuestionAnswerView(APIView):
-    """
-    session/<str:session_id>/next-question/
-    
-    """
-    def post(self,request,session_id):
-        
+
+    def post(self, request, session_id):
+
         session = get_session_or_404(session_id)
-        
-        if not session:
-            return Response(
-                {"error": "Clinical session not found."},
-                status=status.HTTP_404_NOT_FOUND
+
+        input_type = request.data.get("input_type", "TEXT")
+        question_key = request.data.get("question_key")
+        question_text = request.data.get("question_text")
+
+        if input_type == "VOICE":
+
+            user_response = request.FILES.get("audio")
+
+            if not user_response:
+                return Response(
+                    {"error": "Audio file is required for voice input."},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+
+        else:
+
+            user_response = request.data.get(
+                "user_response",
+                ""
             )
-        
-        # get answer of previous question from react
-        user_response = request.GET.get()
-        get_next_question(session_id,user_response)
-        
-        # convert to text if input type is voice
-        # convert text to english
-        # send to ai to get extracted information in json form 
-        # store the json info. in cache
-        # get total current cache data of patient history
-        # send current data of history to ai & get a question in json from ai
-        # convert ques to patient language
-        # convert text to speech
-        # send speech with text to react
+
+        result = get_next_question(
+            session_id,
+            user_response,
+            question_key,
+            question_text,
+            input_type,
+        )
+
+        return Response(result)
 
 class QuestionsComplete(APIView):
     """

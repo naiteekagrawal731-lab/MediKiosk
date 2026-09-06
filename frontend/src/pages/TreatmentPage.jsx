@@ -47,7 +47,7 @@ export const TreatmentPage = () => {
 
   return (
     <PageContainer>
-      <ProgressIndicator step={4} total={5} />
+      <ProgressIndicator step={4} total={4} />
       
       <SpeakerButton onClick={() => speak(t.treatmentQuestion, lang)} />
       <h2 className="kiosk-question">{t.treatmentQuestion}</h2>
