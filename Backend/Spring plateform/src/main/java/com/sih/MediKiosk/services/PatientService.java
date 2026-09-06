@@ -71,7 +71,8 @@ public class PatientService {
         patient.getClinicalSessions().add(clinicalSession);
         patientRepo.save(patient);
         return ResponseEntity.ok().body(CreateSessionResponse.builder()
-                        .sessionId(clinicalSession.getId())
+                .sessionId(clinicalSession.getId())
                 .build());
     }
+
 }
