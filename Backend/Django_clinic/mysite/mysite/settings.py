@@ -148,3 +148,6 @@ REST_FRAMEWORK = {
 STATIC_URL = "static/"
 MEDIA_URL = "/media/"
 MEDIA_ROOT = BASE_DIR / "media"
+
+SARVAM_API_KEY = config("SARVAM_API_KEY")
+GEMINI_API_KEY = config("GEMINI_API_KEY")

@@ -3,25 +3,29 @@ import { useNavigate } from 'react-router-dom';
 import { PageContainer } from '../components/PageContainer';
 import { Button } from '../components/Button';
 import { createSession } from '../services/springApi';
+import { createDjangoSession } from '../services/djangoApi';
 import { useSession } from '../context/SessionContext';
 
 export const WelcomePage = () => {
   const navigate = useNavigate();
   const { updateSession, clearSession } = useSession();
   const [loading, setLoading] = useState(false);
+  const [errorMsg, setErrorMsg] = useState('');
 
   const handleStart = async () => {
+    setErrorMsg('');
     setLoading(true);
     // Clear any old session data first
     clearSession();
     
     try {
       const { session_id } = await createSession();
+      await createDjangoSession(session_id);
       updateSession({ sessionId: session_id });
       navigate(`/session/${session_id}/language`);
     } catch (error) {
       console.error('Error creating session:', error);
-      // Handle error gracefully
+      setErrorMsg(error.message || 'Unable to connect to the server. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -43,6 +47,10 @@ export const WelcomePage = () => {
           {loading ? 'Starting...' : 'Start'}
         </Button>
       </div>
+
+      {errorMsg && (
+        <p className="kiosk-message">{errorMsg}</p>
+      )}
     </PageContainer>
   );
 };

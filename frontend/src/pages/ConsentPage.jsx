@@ -37,7 +37,7 @@ export const ConsentPage = () => {
 
   return (
     <PageContainer>
-      <ProgressIndicator step={2} total={5} />
+      <ProgressIndicator step={2} total={4} />
       
       <SpeakerButton onClick={() => speak(t.consentQuestion, lang)} />
       <h2 className="kiosk-question">{t.consentQuestion}</h2>

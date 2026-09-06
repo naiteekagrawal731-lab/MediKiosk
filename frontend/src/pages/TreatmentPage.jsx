@@ -15,6 +15,7 @@ export const TreatmentPage = () => {
   const { sessionData, updateSession } = useSession();
   const { speak } = useSpeechSynthesis();
   const [loading, setLoading] = useState(false);
+  const [errorMsg, setErrorMsg] = useState('');
 
   const lang = sessionData.language || 'EN';
   const t = translations[lang];
@@ -24,6 +25,7 @@ export const TreatmentPage = () => {
   }, [speak, t.treatmentQuestion, lang]);
 
   const handleTreatmentSelect = async (treatmentType) => {
+    setErrorMsg('');
     setLoading(true);
     updateSession({ treatmentType, sessionId });
 
@@ -37,6 +39,7 @@ export const TreatmentPage = () => {
       navigate(`/session/${sessionId}/interview`);
     } catch (error) {
       console.error('Failed to start clinical session', error);
+      setErrorMsg(error.message || 'Unable to connect to the server. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -44,7 +47,7 @@ export const TreatmentPage = () => {
 
   return (
     <PageContainer>
-      <ProgressIndicator step={4} total={5} />
+      <ProgressIndicator step={4} total={4} />
       
       <SpeakerButton onClick={() => speak(t.treatmentQuestion, lang)} />
       <h2 className="kiosk-question">{t.treatmentQuestion}</h2>
@@ -65,6 +68,10 @@ export const TreatmentPage = () => {
           {loading ? '...' : t.allopathic}
         </Button>
       </div>
+
+      {errorMsg && (
+        <p className="kiosk-message">{errorMsg}</p>
+      )}
     </PageContainer>
   );
 };

@@ -1,45 +1,62 @@
-// MOCK MODE is ON for frontend development
-const MOCK_MODE = true;
-
-const generateMockSessionId = () => {
-  const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
-  let result = '';
-  for (let i = 0; i < 8; i++) {
-    result += chars.charAt(Math.floor(Math.random() * chars.length));
-  }
-  return result;
-};
+const SPRING_API_URL = import.meta.env.VITE_SPRING_API_URL || 'http://localhost:8080';
 
 export const createSession = async () => {
-  if (MOCK_MODE) {
-    console.log('[MOCK Spring API] Creating new session...');
-    return new Promise((resolve) => {
-      setTimeout(() => {
-        resolve({ session_id: generateMockSessionId() });
-      }, 500);
+  try {
+    // We assume the real endpoint is /patient/clinicalsession based on inspection, 
+    // but could be easily changed here if the backend changes.
+    const response = await fetch(`${SPRING_API_URL}/api/clinical/patient/clinicalsession`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      }
     });
-  }
 
-  // TODO: Replace with real Spring Boot API call when ready
-  // const response = await fetch('http://localhost:8080/api/session/start', { method: 'POST' });
-  // return response.json();
+    console.log(response)
+
+    if (!response.ok) {
+      throw new Error(`Server returned ${response.status}: ${response.statusText}`);
+    }
+
+    const data = await response.json();
+    
+    // Support either session_id or sessionId based on Spring's Jackson mapping
+    const sessionId = data.sessionId || data.session_id;
+    if (!sessionId) {
+      throw new Error('Session ID not found in server response.');
+    }
+
+    return { session_id: sessionId };
+  } catch (error) {
+    console.error('Spring API Error (createSession):', error);
+    throw new Error('Unable to connect to the server to create a session. Please try again.');
+  }
 };
 
-export const registerGuestPatient = async (data) => {
-  if (MOCK_MODE) {
-    console.log('[MOCK Spring API] Registering guest patient:', data);
-    return new Promise((resolve) => {
-      setTimeout(() => {
-        resolve({ success: true, patient_id: 'GUEST-' + generateMockSessionId() });
-      }, 500);
-    });
-  }
+export const registerGuestPatient = async (data, sessionId) => {
+  try {
+    // Mapping the frontend form fields to the GuestLoginRequest expected by Spring Boot
+    const requestData = {
+      username: data.name,
+      phoneNumber: data.mobile || null,
+      dateOfBirth: data.dob || null,
+      bloodGroup: data.bloodGroup || null,
+      registrationNumber: sessionId // Using registrationNumber to pass the session ID per GuestLoginRequest
+    };
 
-  // TODO: Replace with real Spring Boot API call when ready
-  // const response = await fetch('http://localhost:8080/api/patient/register', { 
-  //   method: 'POST',
-  //   headers: { 'Content-Type': 'application/json' },
-  //   body: JSON.stringify(data)
-  // });
-  // return response.json();
+    const response = await fetch(`${SPRING_API_URL}/guest/login`, { 
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(requestData)
+    });
+
+    if (!response.ok) {
+      throw new Error(`Server returned ${response.status}: ${response.statusText}`);
+    }
+
+    const result = await response.json();
+    return { success: true, ...result };
+  } catch (error) {
+    console.error('Spring API Error (registerGuestPatient):', error);
+    throw new Error('Unable to register patient. Please try again.');
+  }
 };
