@@ -37,4 +37,6 @@ public class DoctorController {
     public ResponseEntity<ClinicalSession> getClinicalSession(@RequestBody String clinicalSessionId){
         return doctorService.getClinicalSeassion(clinicalSessionId);
     }
+
+
 }

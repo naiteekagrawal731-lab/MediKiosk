@@ -5,6 +5,8 @@ import com.sih.MediKiosk.dtos.requestDtos.LoginRequest;
 import com.sih.MediKiosk.dtos.responseDtos.RegistrationNumberResponse;
 import com.sih.MediKiosk.services.HospitalService;
 import com.sih.MediKiosk.services.UsernamePasswordLoginService;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -16,10 +18,12 @@ public class HospitalController {
 
     private final HospitalService hospitalService;
     private final UsernamePasswordLoginService usernamePasswordLoginService;
+    private final LogoutController logoutController;
 
-    public HospitalController(HospitalService hospitalService, UsernamePasswordLoginService usernamePasswordLoginService) {
+    public HospitalController(HospitalService hospitalService, UsernamePasswordLoginService usernamePasswordLoginService, LogoutController logoutController) {
         this.hospitalService = hospitalService;
         this.usernamePasswordLoginService = usernamePasswordLoginService;
+        this.logoutController = logoutController;
     }
 
     @PostMapping("/create")
@@ -33,8 +37,10 @@ public class HospitalController {
     }
 
     @GetMapping("/registrationNumber")
-    public ResponseEntity<RegistrationNumberResponse> getRegistrationNumber() {
-        return hospitalService.getRegistrationNumber();
+    public ResponseEntity<RegistrationNumberResponse> getRegistrationNumber(HttpServletRequest request, HttpServletResponse response) {
+        ResponseEntity<RegistrationNumberResponse> registrationNumberResponse = hospitalService.getRegistrationNumber();
+        logoutController.logout(response,request);
+        return registrationNumberResponse;
     }
 
 

@@ -41,8 +41,6 @@ public class Hospital {
 
     private LocalDate dateOfBirth;
 
-    private String bloodGroup;
-
     @ManyToMany
     @JoinTable(
             name = "hospital_patients",

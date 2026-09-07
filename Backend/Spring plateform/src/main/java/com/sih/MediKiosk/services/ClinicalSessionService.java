@@ -8,16 +8,19 @@ import com.sih.MediKiosk.models.User;
 import com.sih.MediKiosk.repos.ClinicalSessionRepo;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
+import tools.jackson.databind.JsonNode;
 
 @Service
 public class ClinicalSessionService {
 
     private final ClinicalSessionRepo clinicalSessionRepo;
     private final RandomIdGenerater randomIdGenerater;
+    private final DjangoClient djangoClient;
 
-    public ClinicalSessionService(ClinicalSessionRepo clinicalSessionRepo, RandomIdGenerater randomIdGenerater) {
+    public ClinicalSessionService(ClinicalSessionRepo clinicalSessionRepo, RandomIdGenerater randomIdGenerater, DjangoClient djangoClient) {
         this.clinicalSessionRepo = clinicalSessionRepo;
         this.randomIdGenerater = randomIdGenerater;
+        this.djangoClient = djangoClient;
     }
 
     ClinicalSession createSession(){
@@ -26,18 +29,11 @@ public class ClinicalSessionService {
         clinicalSessionRepo.save(clinicalSession);
         return clinicalSession;
     }
-    ClinicalSession createSession(Patient patient){
-        ClinicalSession clinicalSession = new ClinicalSession();
-        clinicalSession.setId(randomIdGenerater.generate());
-        clinicalSession.setPatient(patient);
-        clinicalSessionRepo.save(clinicalSession);
-        return clinicalSession;
-    }
 
 
 
     ClinicalSession getClinicalSessionById(String id){
-        return clinicalSessionRepo.findById(id).orElseThrow(() -> new RuntimeException("Invalid id of clinical seasson"));
+        JsonNode
     }
 
     ClinicalSession getClinicalSeassionByIdAndPatient(String id, Patient patient){
