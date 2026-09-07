@@ -2,9 +2,11 @@ package com.sih.MediKiosk.services;
 
 import com.sih.MediKiosk.dtos.requestDtos.CreatePatientRequest;
 import com.sih.MediKiosk.dtos.requestDtos.GetSessionRequest;
+import com.sih.MediKiosk.dtos.responseDtos.ClinicalSessionDto;
 import com.sih.MediKiosk.dtos.responseDtos.ClinicalSessionSummaryDto;
 import com.sih.MediKiosk.dtos.responseDtos.CreateSessionResponse;
 import com.sih.MediKiosk.exceptions.UsernameNotFound;
+import com.sih.MediKiosk.mappers.ClinicalSessionMapper;
 import com.sih.MediKiosk.models.ClinicalSession;
 import com.sih.MediKiosk.models.Patient;
 import com.sih.MediKiosk.models.User;
@@ -16,6 +18,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import javax.swing.*;
+import java.awt.print.Pageable;
+import java.util.List;
 
 @Service
 public class PatientService {
@@ -24,12 +28,14 @@ public class PatientService {
     private final  RegistrationService registrationService;
     private final UserService userService;
     private final ClinicalSessionService clinicalSessionService;
+    private final ClinicalSessionMapper clinicalSessionMapper;
 
-    public PatientService(PatientRepo patientRepo, RegistrationService registrationService, UserService userService, ClinicalSessionService clinicalSessionService) {
+    public PatientService(PatientRepo patientRepo, RegistrationService registrationService, UserService userService, ClinicalSessionService clinicalSessionService, ClinicalSessionMapper clinicalSessionMapper) {
         this.patientRepo = patientRepo;
         this.registrationService = registrationService;
         this.userService = userService;
         this.clinicalSessionService = clinicalSessionService;
+        this.clinicalSessionMapper = clinicalSessionMapper;
     }
 
     @Transactional
@@ -62,6 +68,18 @@ public class PatientService {
     public ResponseEntity<ClinicalSessionSummaryDto> getClinicalSeassion(GetSessionRequest request){
         Patient patient = getPatientOfUser();
         return ResponseEntity.ok().body(clinicalSessionService.getClinicalSeassionByIdAndPatient(request.getSessionId(),patient));
+    }
+    @PreAuthorize("hasRole('PATIENT')")
+    public ResponseEntity<List<ClinicalSessionDto>> getMultipleClinicalSeassion(){
+        Patient patient = getPatientOfUser();
+        List<ClinicalSession> clinicalSessions = patient.getClinicalSessions();
+        for(ClinicalSession clinicalSession : clinicalSessions){
+            if(!clinicalSession.isHasGottenSummary()){
+                clinicalSession.setSummary(clinicalSessionService.getClinicalSessionById(clinicalSession.getId()).getOverallSummary());
+                clinicalSession.setHasGottenSummary(true);
+            }
+        }
+        return ResponseEntity.ok().body(clinicalSessions.stream().map(clinicalSessionMapper::toDto).toList());
     }
     @Transactional
     public ResponseEntity<CreateSessionResponse> createSession(){

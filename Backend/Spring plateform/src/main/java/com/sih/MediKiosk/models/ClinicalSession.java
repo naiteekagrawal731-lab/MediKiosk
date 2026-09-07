@@ -30,8 +30,12 @@ public class ClinicalSession {
 
     private LocalDateTime createdAt;
 
+    private String summary;
+
+    private boolean hasGottenSummary;
     @PrePersist
     public void create(){
         createdAt = LocalDateTime.now();
+        hasGottenSummary = false;
     }
 }
