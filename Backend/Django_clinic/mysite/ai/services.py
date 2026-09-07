@@ -7,7 +7,9 @@ from clinical.models import (
     AYUSHHistory,
 )
 
-from .gemini import process_allopathic_answer,process_ayush_answer
+from .gemini import process_allopathic_answer,process_ayush_answer,generate_ayush_summary,generate_allopathic_summary
+
+from django.utils import timezone
 
 from .sarvam import (
     speech_to_text,
@@ -207,21 +209,99 @@ def save_history_answer(
 def process_medical_document(document_id):
     pass
 
-
-# ============================================================
-# GENERATE CLINICAL SUMMARY
-# ============================================================
-
-def generate_clinical_summary(session_id):
-    pass
-
-
 # ============================================================
 # DETECT RED FLAGS
 # ============================================================
 
 def detect_red_flags(session_id):
     pass
+
+def build_summary_data(
+    session,
+    clinical_history=None,
+    ayush_history=None,
+):
+    """
+    Build data that will be sent to Gemini for final summary.
+
+    Only one history type is included:
+    - ALLOPATHIC → ClinicalHistory
+    - AYUSH → AYUSHHistory
+
+    Medical documents are not included for now.
+    """
+
+    if session.treatment_type == "ALLOPATHIC":
+
+        if not clinical_history:
+            raise ValueError(
+                "Allopathic clinical history not found."
+            )
+
+        return {
+            "session_id": session.session_id,
+            "language": session.language,
+            "treatment_type": session.treatment_type,
+
+            "clinical_history": {
+                "chief_complaint": clinical_history.chief_complaint,
+                "complaint_duration": clinical_history.complaint_duration,
+                "onset": clinical_history.onset,
+                "progression": clinical_history.progression,
+                "severity": clinical_history.severity,
+                "location": clinical_history.location,
+                "associated_symptoms": clinical_history.associated_symptoms,
+                "aggravating_factors": clinical_history.aggravating_factors,
+                "relieving_factors": clinical_history.relieving_factors,
+                "character": clinical_history.character,
+                "radiation": clinical_history.radiation,
+                "frequency": clinical_history.frequency,
+                "past_medical_history": clinical_history.past_medical_history,
+                "past_surgical_history": clinical_history.past_surgical_history,
+                "current_medications": clinical_history.current_medications,
+                "drug_allergies": clinical_history.drug_allergies,
+                "family_history": clinical_history.family_history,
+                "personal_history": clinical_history.personal_history,
+                "review_of_systems": clinical_history.review_of_systems,
+                "additional_info": clinical_history.additional_info,
+            },
+        }
+
+    elif session.treatment_type == "AYUSH":
+
+        if not ayush_history:
+            raise ValueError(
+                "AYUSH history not found."
+            )
+
+        return {
+            "session_id": session.session_id,
+            "language": session.language,
+            "treatment_type": session.treatment_type,
+
+            "ayush_history": {
+                "prakriti": ayush_history.prakriti,
+                "vikriti": ayush_history.vikriti,
+                "sara": ayush_history.sara,
+                "samhanana": ayush_history.samhanana,
+                "pramana": ayush_history.pramana,
+                "satmya": ayush_history.satmya,
+                "sattva": ayush_history.sattva,
+                "ahara_shakti": ayush_history.ahara_shakti,
+                "vyayama_shakti": ayush_history.vyayama_shakti,
+                "vaya": ayush_history.vaya,
+                "agni": ayush_history.agni,
+                "koshtha": ayush_history.koshtha,
+                "ahara_vihara": ayush_history.ahara_vihara,
+                "nidana": ayush_history.nidana,
+                "samprapti": ayush_history.samprapti,
+            },
+        }
+
+    else:
+        raise ValueError(
+            f"Invalid treatment type: {session.treatment_type}"
+        )
 
 
 # ============================================================
@@ -471,4 +551,80 @@ def get_next_question(
         "question_audio": question_audio,
         "button_options": button_options,
         "is_final": False,
+    }
+def complete_questions(session_id):
+    
+    session = get_session_or_404(session_id)
+
+    # 1. Get already stored clinical data
+    clinical_history = ClinicalHistory.objects.filter(
+        session=session
+    ).first()
+
+    ayush_history = AYUSHHistory.objects.filter(
+        session=session
+    ).first()
+
+    # 2. Prepare only the relevant data
+    data = build_summary_data(
+        session=session,
+        clinical_history=clinical_history,
+        ayush_history=ayush_history,
+    )
+
+    # 3. Generate summary according to treatment type
+    if session.treatment_type == "ALLOPATHIC":
+
+        summary_data = generate_allopathic_summary(
+            data=data,
+            language=session.language,
+        )
+
+    elif session.treatment_type == "AYUSH":
+
+        summary_data = generate_ayush_summary(
+            data=data,
+            language=session.language,
+        )
+
+    else:
+        raise ValueError(
+            f"Invalid treatment type: {session.treatment_type}"
+        )
+
+    # 4. Save summary
+    summary, _ = ClinicalSummary.objects.update_or_create(
+        session=session,
+        defaults={
+            "summary_data": summary_data,
+            "ai_generated": True,
+            "doctor_verified": False,
+            "doctor_edited": False,
+        },
+    )
+
+    # 5. Get red flags
+    red_flags = summary_data.get("red_flags", [])
+
+    session.red_flag_detected = bool(red_flags)
+    session.red_flag_data = red_flags
+
+    # 6. Mark session completed
+    session.status = "COMPLETED"
+    session.completed_at = timezone.now()
+
+    session.save(
+        update_fields=[
+            "status",
+            "completed_at",
+            "red_flag_detected",
+            "red_flag_data",
+        ]
+    )
+
+    return {
+        "success": True,
+        "session_id": session.session_id,
+        "red_flag_detected": session.red_flag_detected,
+        "red_flags": red_flags,
     }
