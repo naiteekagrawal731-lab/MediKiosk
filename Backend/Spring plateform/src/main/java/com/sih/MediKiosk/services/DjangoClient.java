@@ -1,5 +1,6 @@
 package com.sih.MediKiosk.services;
 
+import com.sih.MediKiosk.dtos.responseDtos.ClinicalSessionSummaryDto;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
@@ -13,7 +14,7 @@ public class DjangoClient {
     private final WebClient webClient;
 
     public DjangoClient(WebClient.Builder builder,
-                      @Value("${django.api.keyy}") String apiKey) {
+                      @Value("${django.api.key}") String apiKey) {
 
         this.webClient = builder
                 .baseUrl("/djangoEndpoint")
@@ -21,7 +22,7 @@ public class DjangoClient {
                 .defaultHeader("API-KEY", apiKey)
                 .build();
     }
-    public Mono<JsonNode> getClinicalSession(String sessionId) {
+    public Mono<ClinicalSessionSummaryDto> getClinicalSession(String sessionId) {
         return webClient.get()
                 .uri(uriBuilder -> uriBuilder
                         .path("/api/clinical/session/{sessionId}/summary/")
@@ -36,6 +37,6 @@ public class DjangoClient {
                                         )
                                 )
                 )
-                .bodyToMono(JsonNode.class);
+                .bodyToMono(ClinicalSessionSummaryDto.class);
     }
 }

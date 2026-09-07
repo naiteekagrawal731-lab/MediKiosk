@@ -2,6 +2,7 @@ package com.sih.MediKiosk.services;
 
 import com.sih.MediKiosk.dtos.requestDtos.CreateDoctorRequest;
 import com.sih.MediKiosk.dtos.requestDtos.RegistrationRequest;
+import com.sih.MediKiosk.dtos.responseDtos.ClinicalSessionSummaryDto;
 import com.sih.MediKiosk.models.ClinicalSession;
 import com.sih.MediKiosk.models.Doctor;
 import com.sih.MediKiosk.models.Hospital;
@@ -51,7 +52,7 @@ public class DoctorService {
     }
 
     @PreAuthorize("hasRole('HOSPITAL')")
-    public ResponseEntity<ClinicalSession> getClinicalSeassion(String seassionId){
+    public ResponseEntity<ClinicalSessionSummaryDto> getClinicalSeassion(String seassionId){
         String doctorName = SecurityContextHolder.getContext().getAuthentication().getName();
         User user = userService.getUserByUsername(doctorName).orElseThrow(() -> new RuntimeException("Doctor with username = "+doctorName+" does not exist"));
         Doctor doctor = doctorRepo.findByUser(user).orElseThrow(() -> new RuntimeException("Not a doctor"));

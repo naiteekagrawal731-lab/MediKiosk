@@ -1,4 +1,4 @@
-package com.sih.MediKiosk.dto;
+package com.sih.MediKiosk.dtos.responseDtos;
 
 import lombok.*;
 
@@ -10,11 +10,11 @@ import java.util.List;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class AyushClinicalSessionResponseDto {
+public class ClinicalSessionSummaryDto {
 
     // Patient details
     private String patientName;
-    private Integer age;
+    private String gender;
     private LocalDate dateOfBirth;
     private String bloodGroup;
     private String phoneNumber;
@@ -43,5 +43,13 @@ public class AyushClinicalSessionResponseDto {
     private List<String> aharaVihara;
     private List<String> nidana;
     private List<String> samprapti;
+
+    private List<String> pastMedicalHistory;
+    private List<String> pastSurgicalHistory;
+    private List<String> medications;
+    private List<String> allergies;
+    private List<String> familyHistory;
+    private List<String> lifestyleAndHabits;
+    private List<String> redFlags;
     private List<String> additionalNotes;
 }

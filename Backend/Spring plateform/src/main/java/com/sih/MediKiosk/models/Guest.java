@@ -20,11 +20,9 @@ public class Guest {
     private UUID id;
 
     private String name;
-
+    private String gender;
     private LocalDate dateOfBirth;
-
     private String bloodGroup;
-
     private String phoneNumber;
 
 

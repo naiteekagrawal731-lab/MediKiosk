@@ -45,7 +45,8 @@ public class SecurityConfig {
                                 "/hospital/create",
                                 "/api/logout",
                                 "/patient/create",
-                                "/patient/login"
+                                "/patient/login",
+                                "/**"
                         )
                         .permitAll()
                         .anyRequest().authenticated())

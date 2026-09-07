@@ -2,6 +2,7 @@ package com.sih.MediKiosk.services;
 
 import com.sih.MediKiosk.dtos.requestDtos.CreatePatientRequest;
 import com.sih.MediKiosk.dtos.requestDtos.GetSessionRequest;
+import com.sih.MediKiosk.dtos.responseDtos.ClinicalSessionSummaryDto;
 import com.sih.MediKiosk.dtos.responseDtos.CreateSessionResponse;
 import com.sih.MediKiosk.exceptions.UsernameNotFound;
 import com.sih.MediKiosk.models.ClinicalSession;
@@ -58,7 +59,7 @@ public class PatientService {
 
     //When patient want to find his clinical seasion
     @PreAuthorize("hasRole('PATIENT')")
-    public ResponseEntity<ClinicalSession> getClinicalSeassion(GetSessionRequest request){
+    public ResponseEntity<ClinicalSessionSummaryDto> getClinicalSeassion(GetSessionRequest request){
         Patient patient = getPatientOfUser();
         return ResponseEntity.ok().body(clinicalSessionService.getClinicalSeassionByIdAndPatient(request.getSessionId(),patient));
     }

@@ -37,6 +37,7 @@ public class GuestService {
                 .phoneNumber(request.getPhoneNumber())
                 .dateOfBirth(request.getDateOfBirth())
                 .bloodGroup(request.getBloodGroup())
+                .gender(request.getGender())
                 .build();
         clinicalSession.setGuest(guest);
         guestRepo.save(guest);
