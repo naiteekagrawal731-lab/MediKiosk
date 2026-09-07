@@ -17,7 +17,17 @@ export const translations = {
     treatmentQuestion: "What type of treatment are you seeking?",
     ayush: "AYUSH (Ayurvedic)",
     allopathic: "Allopathic",
-    interviewPlaceholder: "Clinical interview will begin here."
+    interviewPlaceholder: "Clinical interview will begin here.",
+    thankYouTitle: "Thank You",
+    thankYouMsg: "Thank you. Your information has been recorded.",
+    redFlagTitle: "Medical Attention Advised",
+    redFlagMsg: "Some information from your answers may need early medical attention. Please see a doctor as soon as possible.",
+    sessionIdTitle: "YOUR SESSION ID",
+    sessionIdInstruction: "Please write down your Session ID and give it to the doctor when you go inside.",
+    autoEndNotice: "Session will end automatically in",
+    seconds: "seconds",
+    endSession: "End Session",
+    playAlert: "Play Staff Alert"
   },
   HI: {
     languageQuestion: "कृपया अपनी पसंदीदा भाषा चुनें",
@@ -37,6 +47,17 @@ export const translations = {
     treatmentQuestion: "आप किस प्रकार का उपचार चाहते हैं?",
     ayush: "आयुष (आयुर्वेदिक)",
     allopathic: "एलोपैथिक",
-    interviewPlaceholder: "क्लीनिकल इंटरव्यू यहाँ शुरू होगा।"
+    interviewPlaceholder: "क्लीनिकल इंटरव्यू यहाँ शुरू होगा।",
+    thankYouTitle: "धन्यवाद",
+    thankYouMsg: "धन्यवाद। आपकी जानकारी दर्ज कर ली गई है।",
+    redFlagTitle: "शीघ्र चिकित्सा परामर्श आवश्यक",
+    redFlagMsg: "आपके उत्तरों के अनुसार आपको शीघ्र चिकित्सा परामर्श की आवश्यकता हो सकती है। कृपया जल्द से जल्द डॉक्टर से संपर्क करें।",
+    sessionIdTitle: "आपका सेशन आईडी",
+    sessionIdInstruction: "कृपया अपना सेशन आईडी लिख लें और अंदर जाने पर डॉक्टर को दें।",
+    autoEndNotice: "सेशन अपने आप समाप्त हो जाएगा:",
+    seconds: "सेकंड में",
+    endSession: "सेशन समाप्त करें",
+    playAlert: "स्टाफ अलर्ट बजाएं"
   }
 };
+

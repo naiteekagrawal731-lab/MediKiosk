@@ -10,6 +10,7 @@ import { RegisterPage } from './pages/RegisterPage';
 import { TreatmentPage } from './pages/TreatmentPage';
 import { InterviewPage } from './pages/InterviewPage';
 import { ThankYouPage } from './pages/ThankYouPage';
+import { RedFlagPage } from './pages/RedFlagPage';
 import { NotFoundPage } from './pages/NotFoundPage';
 
 function App() {
@@ -25,6 +26,7 @@ function App() {
           <Route path="/session/:sessionId/treatment" element={<TreatmentPage />} />
           <Route path="/session/:sessionId/interview" element={<InterviewPage />} />
           <Route path="/session/:sessionId/thank-you" element={<ThankYouPage />} />
+          <Route path="/session/:sessionId/red-flag" element={<RedFlagPage />} />
           
           <Route path="/404" element={<NotFoundPage />} />
           <Route path="*" element={<Navigate to="/404" replace />} />

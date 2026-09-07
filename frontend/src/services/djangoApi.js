@@ -51,10 +51,10 @@ export const getNextQuestion = async (sessionId, answerData = null) => {
 
     if (answerData && answerData.input_type === 'VOICE' && answerData.audioBlob) {
       const formData = new FormData();
+      formData.append('input_type', 'VOICE');
       formData.append('question_key', answerData.question_key || '');
       formData.append('question_text', answerData.question_text || '');
-      formData.append('input_type', answerData.input_type);
-      formData.append('audio', answerData.audioBlob, 'answer.webm');
+      formData.append('audio', answerData.audioBlob, 'recording.wav');
       body = formData;
       // Do not set Content-Type for FormData, browser sets it with boundary
     } else if (answerData) {

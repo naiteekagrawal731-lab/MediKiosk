@@ -7,6 +7,53 @@ import { translations } from '../utils/translations';
 import { getNextQuestion, finishQuestions } from '../services/djangoApi';
 import { useSpeechSynthesis } from '../hooks/useSpeechSynthesis';
 
+const encodeWAV = (samples, sampleRate) => {
+  const buffer = new ArrayBuffer(44 + samples.length * 2);
+  const view = new DataView(buffer);
+  
+  const writeString = (view, offset, string) => {
+    for (let i = 0; i < string.length; i++) {
+      view.setUint8(offset + i, string.charCodeAt(i));
+    }
+  };
+  
+  writeString(view, 0, 'RIFF');
+  view.setUint32(4, 36 + samples.length * 2, true);
+  writeString(view, 8, 'WAVE');
+  writeString(view, 12, 'fmt ');
+  view.setUint32(16, 16, true);
+  view.setUint16(20, 1, true); // PCM format
+  view.setUint16(22, 1, true); // Mono channel
+  view.setUint32(24, sampleRate, true);
+  view.setUint32(28, sampleRate * 2, true);
+  view.setUint16(32, 2, true); // block align
+  view.setUint16(34, 16, true); // 16-bit
+  writeString(view, 36, 'data');
+  view.setUint32(40, samples.length * 2, true);
+  
+  // write 16-bit PCM samples
+  let offset = 44;
+  for (let i = 0; i < samples.length; i++, offset += 2) {
+    let s = Math.max(-1, Math.min(1, samples[i]));
+    view.setInt16(offset, s < 0 ? s * 0x8000 : s * 0x7FFF, true);
+  }
+  
+  return new Blob([view], { type: 'audio/wav' });
+};
+
+const convertToWav = async (blob) => {
+  const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+  const arrayBuffer = await blob.arrayBuffer();
+  const audioBuffer = await audioContext.decodeAudioData(arrayBuffer);
+  const offlineContext = new OfflineAudioContext(1, audioBuffer.duration * audioBuffer.sampleRate, audioBuffer.sampleRate);
+  const source = offlineContext.createBufferSource();
+  source.buffer = audioBuffer;
+  source.connect(offlineContext.destination);
+  source.start();
+  const renderedBuffer = await offlineContext.startRendering();
+  return encodeWAV(renderedBuffer.getChannelData(0), renderedBuffer.sampleRate);
+};
+
 export const InterviewPage = () => {
   const { sessionId } = useParams();
   const navigate = useNavigate();
@@ -46,14 +93,23 @@ export const InterviewPage = () => {
   
   const initialFetchDoneRef = useRef(false);
 
+  const [isCompleting, setIsCompleting] = useState(false);
+
   const fetchNextQuestion = async (answerData = null) => {
     setLoading(true);
     setErrorMsg('');
     try {
+      if (!answerData) {
+        console.log("[Interview] No cached question, requesting first question");
+      } else {
+        console.log("[Interview] Requesting next question after answer");
+      }
+
       const response = await getNextQuestion(sessionId, answerData);
       
-      if (response.question_key === 'last_question' || response.is_final) {
+      if (response.question_key === 'last_question') {
         // Complete session
+        setQuestionKey('last_question');
         sessionStorage.removeItem(`medikiosk_current_question_${sessionId}`);
         await handleFinishQuestions();
         return;
@@ -82,10 +138,10 @@ export const InterviewPage = () => {
         questionKey: response.question_key,
         questionText: response.question_text,
         buttonOptions: response.button_options || [],
-        questionAudio: response.question_audio || response.audio_url || null,
-        isFinal: response.is_final || false
+        questionAudio: response.question_audio || response.audio_url || null
       };
       sessionStorage.setItem(`medikiosk_current_question_${sessionId}`, JSON.stringify(cacheData));
+      console.log("[Interview] Saved current question");
       
       // Reset answers
       setTextAnswer('');
@@ -111,9 +167,18 @@ export const InterviewPage = () => {
   };
 
   const handleFinishQuestions = async () => {
+    setLoading(true);
+    setIsCompleting(true);
+    setErrorMsg('');
     try {
-      await finishQuestions(sessionId);
-      navigate(`/session/${sessionId}/thank-you`);
+      const res = await finishQuestions(sessionId);
+      sessionStorage.removeItem(`medikiosk_current_question_${sessionId}`);
+      
+      if (res && res.red_flag_detected === true) {
+        navigate(`/session/${sessionId}/red-flag`, { replace: true });
+      } else {
+        navigate(`/session/${sessionId}/thank-you`, { replace: true });
+      }
     } catch (err) {
       console.error(err);
       setErrorMsg(err.message || 'Error finishing session. Please try again.');
@@ -134,10 +199,11 @@ export const InterviewPage = () => {
       try {
         const cachedData = JSON.parse(cachedDataStr);
         if (cachedData.sessionId === sessionId) {
+          console.log("[Interview] Restoring current question from sessionStorage");
           setQuestionKey(cachedData.questionKey);
           setQuestionText(cachedData.questionText);
           setButtonOptions(cachedData.buttonOptions || []);
-          setQuestionAudio(cachedData.questionAudio);
+          setQuestionAudio(cachedData.questionAudio || null);
           setQuestionNumber(cachedData.questionNumber || 1);
           
           if (cachedData.buttonOptions && cachedData.buttonOptions.length > 0) {
@@ -151,7 +217,7 @@ export const InterviewPage = () => {
           // Recreate qData format for playQuestionAudio
           const qData = {
             question_text: cachedData.questionText,
-            question_audio: cachedData.questionAudio
+            question_audio: cachedData.questionAudio || null
           };
           playQuestionAudio(qData);
           return;
@@ -189,6 +255,9 @@ export const InterviewPage = () => {
       ? (qData.question_audio || qData.audio_url)
       : questionAudio;
 
+    const isHindi = /[\u0900-\u097F]/.test(textToPlay);
+    const speechLang = isHindi ? 'HI' : lang;
+
     if (audioToPlay) {
       let audioSrc = audioToPlay;
 
@@ -197,16 +266,17 @@ export const InterviewPage = () => {
         audioSrc = `data:audio/wav;base64,${audioToPlay}`;
       }
 
-      audioPlayerRef.current.src = audioSrc;
-      audioPlayerRef.current.volume = volume;
+      const audio = new Audio(audioSrc);
+      audio.volume = volume;
+      audioPlayerRef.current = audio;
 
-      audioPlayerRef.current.play().catch((e) => {
+      audio.play().catch((e) => {
         console.error("Audio play error:", e);
-        speak(textToPlay, lang); // fallback
+        speak(textToPlay, speechLang); // fallback
       });
 
     } else if (textToPlay) {
-      speak(textToPlay, lang);
+      speak(textToPlay, speechLang);
     }
   };
 
@@ -230,10 +300,22 @@ export const InterviewPage = () => {
         }
       };
       
-      mediaRecorderRef.current.onstop = () => {
-        const blob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
-        setAudioBlob(blob);
-        setAudioUrl(URL.createObjectURL(blob));
+      mediaRecorderRef.current.onstop = async () => {
+        try {
+          const webmBlob = new Blob(audioChunksRef.current, { type: mediaRecorderRef.current.mimeType || 'audio/webm' });
+          console.log("Audio type before conversion:", webmBlob.type);
+          console.log("Audio size before conversion:", webmBlob.size);
+          const wavBlob = await convertToWav(webmBlob);
+          console.log("Audio type after conversion:", wavBlob.type);
+          console.log("Audio size after conversion:", wavBlob.size);
+          setAudioBlob(wavBlob);
+          setAudioUrl(URL.createObjectURL(wavBlob));
+        } catch (e) {
+          console.error("Audio conversion failed:", e);
+          const fallbackBlob = new Blob(audioChunksRef.current, { type: mediaRecorderRef.current.mimeType || 'audio/webm' });
+          setAudioBlob(fallbackBlob);
+          setAudioUrl(URL.createObjectURL(fallbackBlob));
+        }
         // Release tracks
         stream.getTracks().forEach(track => track.stop());
       };
@@ -386,6 +468,13 @@ export const InterviewPage = () => {
           {errorMsg && (
             <div style={{ color: 'red', marginBottom: '1rem', fontSize: '1.2rem' }}>
               {errorMsg}
+              {isCompleting && (
+                <div style={{ marginTop: '1rem' }}>
+                  <Button onClick={handleFinishQuestions} variant="primary">
+                    Retry Finalizing Session
+                  </Button>
+                </div>
+              )}
             </div>
           )}
 
@@ -453,7 +542,7 @@ export const InterviewPage = () => {
             )}
           </div>
 
-          <Button onClick={handleSubmit} variant="primary" size="large" disabled={loading} style={{ width: '100%' }}>
+          <Button onClick={handleSubmit} variant="primary" size="large" disabled={loading || isRecording} style={{ width: '100%' }}>
             {loading ? 'Please wait...' : 'Submit / Continue'}
           </Button>
 

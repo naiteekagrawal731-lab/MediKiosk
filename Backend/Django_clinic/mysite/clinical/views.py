@@ -7,7 +7,7 @@ from rest_framework.parsers import MultiPartParser, FormParser, JSONParser
 from rest_framework.response import Response
 from rest_framework.views import APIView
 # from .authentication import AIServiceAuthentication
-from ai.services import get_next_question
+from ai.services import get_next_question,complete_questions
 from .models import (
     ClinicalSession,
     HistoryAnswer,
@@ -47,7 +47,7 @@ def get_session_or_404(session_id):
     
 class Getsession(APIView):
     def post(self,request):
-        return Response({"session_id":"ABKDJHCL"})
+        return Response({"session_id":"BBKDJLRK"})
 
 class StartSession(APIView):
 
@@ -246,15 +246,33 @@ class QuestionAnswerView(APIView):
 
 class QuestionsComplete(APIView):
     """
-    session/<str:session_id>/questions-done/
-    
+    POST /api/clinical/session/<session_id>/questions-done/
     """
-    # store additional information
-    # take all cache information & store it in actual database
-    # send final data to ai & get summary
-    # store summary info in database
-    # if summary found red flag then alert
-    # send summary to springboot backend
+
+    def post(self, request, session_id):
+
+        try:
+            result = complete_questions(session_id)
+
+            return Response(
+                result,
+                status=status.HTTP_200_OK
+            )
+
+        except ValueError as e:
+            return Response(
+                {"error": str(e)},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        except Exception as e:
+            return Response(
+                {
+                    "error": "Failed to complete clinical history",
+                    "details": str(e),
+                },
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
 
 # ============================================================
 # ANSWERS
