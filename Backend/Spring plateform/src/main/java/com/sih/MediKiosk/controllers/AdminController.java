@@ -1,8 +1,10 @@
 package com.sih.MediKiosk.controllers;
 
 import com.sih.MediKiosk.dtos.requestDtos.AdminUserCreationDto;
+import com.sih.MediKiosk.dtos.requestDtos.LoginRequest;
 import com.sih.MediKiosk.dtos.responseDtos.AdminDto;
 import com.sih.MediKiosk.services.UserService;
+import com.sih.MediKiosk.services.UsernamePasswordLoginService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -17,9 +19,11 @@ import java.util.UUID;
 public class AdminController {
 
     private final UserService userService;
+    private final UsernamePasswordLoginService usernamePasswordLoginService;
 
-    public AdminController(UserService userService) {
+    public AdminController(UserService userService, UsernamePasswordLoginService usernamePasswordLoginService) {
         this.userService = userService;
+        this.usernamePasswordLoginService = usernamePasswordLoginService;
     }
 
     @PostMapping("/create")
@@ -31,6 +35,10 @@ public class AdminController {
     @DeleteMapping("/delete")
     public ResponseEntity<?> deleteAdminById(@RequestParam UUID id){
         return userService.deleteAdmin(id);
+    }
+    @GetMapping("/login")
+    public ResponseEntity<?> login(@RequestBody LoginRequest request){
+        return usernamePasswordLoginService.login(request);
     }
 
     @GetMapping("/all")
