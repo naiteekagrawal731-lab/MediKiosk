@@ -6,5 +6,5 @@ import lombok.Data;
 @Data
 @Builder
 public class GuestLoginResponse {
-    private String seassionId;
+    private String sessionId;
 }

@@ -9,8 +9,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
-import java.util.List;
 import java.util.UUID;
 
 @Service
@@ -46,7 +44,7 @@ public class GuestService {
         hospitalService.addGuestToHospitalPermission(UUID.fromString(request.getRegistrationNumber()),guest);
 
         return ResponseEntity.ok().body(GuestLoginResponse.builder()
-                .seassionId(clinicalSession.getId())
+                .sessionId(clinicalSession.getId())
                 .build());
 
     }
