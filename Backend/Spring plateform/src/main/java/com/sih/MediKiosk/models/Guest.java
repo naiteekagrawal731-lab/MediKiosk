@@ -26,7 +26,7 @@ public class Guest {
     private String phoneNumber;
 
 
-    @OneToOne
+    @OneToOne(cascade = {CascadeType.PERSIST, CascadeType.MERGE})
     @JoinColumn(name = "clinical_session_id")
     private ClinicalSession clinicalSession;
 }

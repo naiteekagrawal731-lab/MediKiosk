@@ -6,9 +6,11 @@ import com.sih.MediKiosk.models.ClinicalSession;
 import com.sih.MediKiosk.models.Guest;
 import com.sih.MediKiosk.repos.GuestRepo;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
 import java.util.UUID;
 
 @Service
@@ -26,7 +28,25 @@ public class GuestService {
     }
 
     @Transactional
-    public ResponseEntity<GuestLoginResponse> guestLogin(GuestLoginRequest request){
+    public ResponseEntity<GuestLoginResponse> guestLogin(GuestLoginRequest request) {
+        log.info("Registration number = {}", request.getRegistrationNumber());
+
+        // Validate registrationNumber before attempting UUID.fromString to produce
+        // a clear 400 error rather than a NullPointerException.
+        String regNum = request.getRegistrationNumber();
+        if (regNum == null || regNum.isBlank()) {
+            log.warn("Guest login rejected: registrationNumber is null or blank");
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).build();
+        }
+
+        UUID hospitalUuid;
+        try {
+            hospitalUuid = UUID.fromString(regNum);
+        } catch (IllegalArgumentException e) {
+            log.warn("Guest login rejected: registrationNumber '{}' is not a valid UUID", regNum);
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).build();
+        }
+
         ClinicalSession clinicalSession = clinicalSessionService.createSession();
 
         Guest guest = Guest.builder()
@@ -37,15 +57,20 @@ public class GuestService {
                 .bloodGroup(request.getBloodGroup())
                 .gender(request.getGender())
                 .build();
+
+        // IMPORTANT: save() returns the managed entity with the DB-assigned UUID.
+        // The original 'guest' reference still has id=null after save() if the ID
+        // is DB-generated (@GeneratedValue). Using the un-saved reference in the
+        // hospital collection causes TransientPropertyValueException on auto-flush.
+        guest = guestRepo.save(guest);
         clinicalSession.setGuest(guest);
-        guestRepo.save(guest);
 
+        hospitalService.addGuestToHospitalPermission(hospitalUuid, guest);
 
-        hospitalService.addGuestToHospitalPermission(UUID.fromString(request.getRegistrationNumber()),guest);
+        log.info("Guest login successful. sessionId = {}", clinicalSession.getId());
 
         return ResponseEntity.ok().body(GuestLoginResponse.builder()
                 .sessionId(clinicalSession.getId())
                 .build());
-
     }
 }

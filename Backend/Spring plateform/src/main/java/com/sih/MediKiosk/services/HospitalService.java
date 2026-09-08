@@ -7,6 +7,7 @@ import com.sih.MediKiosk.exceptions.UsernameNotFound;
 import com.sih.MediKiosk.exceptions.UsernameTaken;
 import com.sih.MediKiosk.models.*;
 import com.sih.MediKiosk.repos.HospitalRepo;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -16,6 +17,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.UUID;
 
 @Service
+@Slf4j
 public class HospitalService {
 
     private final HospitalRepo hospitalRepo;
@@ -55,6 +57,7 @@ public class HospitalService {
         User user = userService.getUserByUsername(username).orElseThrow(() -> new UsernameNotFound("User with username = "+username+" does not exist"));
 
         Hospital hospital =  hospitalRepo.findByUser(user).orElseThrow(() -> new RuntimeException("Not a valid hospital account"));
+        log.info("Successfully got the hospital {}", hospital.getUser().getUsername());
         return ResponseEntity.ok(RegistrationNumberResponse.builder()
                         .registrationNumber(hospital.getRegistrationNumber().toString())
                 .build());

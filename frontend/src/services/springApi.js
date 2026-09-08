@@ -50,8 +50,13 @@ export const createSession = async () => {
  * Body: { username, gender, dateOfBirth, bloodGroup, phoneNumber, registrationNumber }
  */
 export const registerGuestPatient = async (guestData) => {
+  console.log("Starting of guest")
   try {
     const hospitalRegNum = getHospitalRegistrationNumber() || '';
+
+    console.log(5);
+    console.log(hospitalRegNum);
+
 
     const payload = {
       username: (guestData.username || guestData.name || '').trim(),

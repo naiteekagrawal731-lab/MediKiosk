@@ -24,8 +24,7 @@ public class ClinicalSession {
     @JoinColumn(name = "patient_id")
     private Patient patient;
 
-    @OneToOne()
-    @JoinColumn(name = "guest_id")
+    @OneToOne(mappedBy = "clinicalSession", cascade = {CascadeType.PERSIST, CascadeType.MERGE})
     private Guest guest;
 
     private LocalDateTime createdAt;
