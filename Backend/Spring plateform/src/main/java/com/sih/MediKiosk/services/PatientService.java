@@ -93,10 +93,6 @@ public class PatientService {
                 .sessionId(clinicalSession.getId())
                 .build());
     }
-    //To be continue
-    public ResponseEntity<ClinicalSession> getAllClinicalSession(){
-        Patient patient = getPatientOfUser();
-        return (ResponseEntity<ClinicalSession>) patient.getClinicalSessions();
-    }
+
 
 }
