@@ -1398,172 +1398,6 @@ IMPORTANT OUTPUT RULES:
 
     return json.loads(response.text)
 
-def generate_ayush_summary(data):
-    """
-    Generate the final physician-ready clinical summary.
-
-    Gemini returns ONLY JSON matching the frontend summary schema.
-    """
-
-    prompt = """You are an AI clinical history summarization engine for an AYUSH clinical intake system.
-
-Your task is to generate a concise, structured summary from the provided AYUSH patient history data.
-
-IMPORTANT:
-
-* The input contains AYUSH clinical history only.
-* Do NOT generate or add an Allopathic clinical summary.
-* Do NOT invent information.
-* Do NOT make a diagnosis.
-* Do NOT recommend medicines, treatment, or management.
-* Only summarize information explicitly present in the provided data.
-* Missing information must remain empty.
-* Keep the summary concise and useful for an AYUSH physician.
-
-OUTPUT RULES:
-
-1. Return ONLY valid JSON.
-2. Do not return Markdown.
-3. Do not add explanations outside JSON.
-4. Return exactly the fields defined in the schema below.
-5. Do not add, remove, rename, or restructure fields.
-6. The top-level field "treatment_type" MUST always be "AYUSH".
-7. Do not create Allopathic fields such as medications, allergies, review_of_systems, or a conventional HPI unless that information is explicitly present in the input and belongs to the provided AYUSH history.
-8. Do not infer Prakriti, Vikriti, Agni, Koshtha, or any other AYUSH parameter from symptoms unless it is explicitly provided.
-9. Preserve the patient's reported information without changing its meaning.
-10. If information is unavailable, use:
-
-* "" for missing text
-* [] for missing lists
-* {{}} for missing objects.
-
-AYUSH SUMMARY STRUCTURE:
-
-{
-"treatment_type": "AYUSH",
-"ayush_summary": {
-"chief_complaint": "",
-"complaint_duration": "",
-"prakriti": "",
-"vikriti": "",
-"sara": "",
-"samhanana": "",
-"pramana": "",
-"satmya": "",
-"sattva": "",
-"ahara_shakti": "",
-"vyayama_shakti": "",
-"vaya": "",
-"agni": "",
-"koshtha": "",
-"ahara_vihara": "",
-"nidana": "",
-"samprapti": "",
-"additional_information": ""
-}
-}
-
-FIELD RULES:
-
-* "chief_complaint":
-  Summarize the patient's main reported problem or reason for consultation.
-
-* "complaint_duration":
-  Include the duration only when explicitly stated by the patient.
-
-* "prakriti":
-  Include only explicitly collected or reported Prakriti information.
-
-* "vikriti":
-  Include only explicitly collected or reported Vikriti information.
-
-* "sara":
-  Include the collected Sara assessment.
-
-* "samhanana":
-  Include the collected Samhanana assessment.
-
-* "pramana":
-  Include the collected Pramana assessment.
-
-* "satmya":
-  Include the collected Satmya assessment.
-
-* "sattva":
-  Include the collected Sattva assessment.
-
-* "ahara_shakti":
-  Include the collected Ahara Shakti assessment.
-
-* "vyayama_shakti":
-  Include the collected Vyayama Shakti assessment.
-
-* "vaya":
-  Include the collected age-related Vaya assessment.
-
-* "agni":
-  Include the collected Agni assessment.
-
-* "koshtha":
-  Include the collected Koshtha assessment.
-
-* "ahara_vihara":
-  Summarize explicitly reported diet, daily routine, lifestyle, habits, sleep, activity, or other relevant Ahara-Vihara information.
-
-* "nidana":
-  Include explicitly reported or collected Nidana information.
-  Do not infer causes that were not stated.
-
-* "samprapti":
-  Include only explicitly collected Samprapti information.
-  Do not independently construct a Samprapti.
-
-* "additional_information":
-  Include useful AYUSH-related information that does not fit into the defined fields.
-
-IMPORTANT DISTINCTION:
-This is an AYUSH summary, not an Allopathic summary.
-
-Do NOT automatically create:
-
-* history_of_present_illness
-* past_medical_history
-* past_surgical_history
-* medications
-* allergies
-* family_history
-* personal_history
-* review_of_systems
-* investigations
-* diagnosis
-* treatment_plan
-
-unless those details are explicitly present in the input and are specifically required by the schema. Since they are not part of this AYUSH schema, place any useful unmatched information in "additional_information".
-
-INPUT DATA:
-{data}
-"""
-
-    response = client.models.generate_content(
-        model=MODEL_NAME,
-        contents=prompt,
-        config=types.GenerateContentConfig(
-            temperature=0.1,
-            response_mime_type="application/json",
-        ),
-    )
-
-    if not response.text:
-        raise ValueError("Gemini returned an empty summary.")
-
-    try:
-        summary = json.loads(response.text)
-    except json.JSONDecodeError as e:
-        raise ValueError(
-            f"Gemini returned invalid JSON: {str(e)}"
-        )
-
-    return summary
 
 def generate_allopathic_summary(data, language="EN"):
     """
@@ -1591,6 +1425,8 @@ DO NOT write a sentence for every field.
 
 Most fields must contain SHORT CLINICAL PHRASES or KEYWORDS,
 not full sentences.
+
+* Summary must be in english even if given data is in hindi
 
 For example:
 
@@ -2070,7 +1906,7 @@ INPUT DATA
 
 Generate the final Allopathic summary.
 
-Return ONLY valid JSON.
+Return ONLY valid JSON. (it should be in english even if data is in hindi)
 """
 
     response = client.models.generate_content(
@@ -2246,7 +2082,7 @@ Do NOT add Allopathic fields such as:
 - family_history
 - review_of_systems
 - investigations
-- red_flags
+- red_flags 
 
 unless they are explicitly required by this schema.
 
@@ -2257,6 +2093,8 @@ GENERAL RULES
 -----------------------------------
 
 1. Use ONLY information present in the input.
+
+* Summary must be in english even if given data is in hindi
 
 2. Never hallucinate.
 
@@ -2836,7 +2674,7 @@ INPUT DATA
 
 Generate the final AYUSH summary now.
 
-Return ONLY valid JSON.
+Return ONLY valid JSON. (it should be in english even if data is in hindi)
 """
 
     response = client.models.generate_content(
