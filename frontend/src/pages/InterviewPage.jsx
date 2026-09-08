@@ -59,8 +59,8 @@ export const InterviewPage = () => {
   const navigate = useNavigate();
   const { sessionData } = useSession();
 
-  const lang = sessionData.language || 'EN';
-  const t = translations[lang] || {};
+  const lang = sessionData?.language || 'EN';
+  const t = translations[lang] || translations['EN'];
 
   // Question state
   const [questionKey, setQuestionKey] = useState('');
@@ -69,10 +69,72 @@ export const InterviewPage = () => {
   const [questionAudio, setQuestionAudio] = useState(null);
   const [questionNumber, setQuestionNumber] = useState(1);
 
+  // Preferred input mode: VOICE (default), BUTTON, TYPE
+  const [preferredInputMode, setPreferredInputMode] = useState(() => {
+    return sessionStorage.getItem('medikiosk_preferred_input_mode') || 'VOICE';
+  });
+
+  // Active answer mode for current UI: VOICE, BUTTON, TYPE
+  const [answerMode, setAnswerMode] = useState('VOICE');
+
   // UI state
   const [loading, setLoading] = useState(true);
   const [errorMsg, setErrorMsg] = useState('');
-  const [answerMode, setAnswerMode] = useState('VOICE'); // VOICE, BUTTON, TYPE
+  const [isCompleting, setIsCompleting] = useState(false);
+  const [showBackModal, setShowBackModal] = useState(false);
+
+  // Handle Browser Back button interception in AI Phase
+  useEffect(() => {
+    window.history.pushState({ isAiInterview: true }, '');
+
+    const handlePopState = (e) => {
+      e.preventDefault();
+      window.history.pushState({ isAiInterview: true }, '');
+      setShowBackModal(true);
+    };
+
+    window.addEventListener('popstate', handlePopState);
+
+    return () => {
+      window.removeEventListener('popstate', handlePopState);
+    };
+  }, []);
+
+  const handleCancelBack = () => {
+    setShowBackModal(false);
+  };
+
+  const handleConfirmNewTest = async () => {
+    setShowBackModal(false);
+
+    if (audioPlayerRef.current) {
+      audioPlayerRef.current.pause();
+    }
+    window.speechSynthesis.cancel();
+
+    // Clear temporary AI interview session state
+    sessionStorage.removeItem(`medikiosk_current_question_${sessionId}`);
+    sessionStorage.removeItem('medikiosk_preferred_input_mode');
+
+    // Reset preferred input mode to VOICE
+    setPreferredInputMode('VOICE');
+    setAnswerMode('VOICE');
+
+    // Clear current question and answer states
+    setQuestionKey('');
+    setQuestionText('');
+    setButtonOptions([]);
+    setQuestionAudio(null);
+    setQuestionNumber(1);
+    setTextAnswer('');
+    setSelectedButton('');
+    setAudioBlob(null);
+    setAudioUrl('');
+    setErrorMsg('');
+
+    // Navigate to treatment selection page so user can choose treatment type and continue fresh
+    navigate(`/session/${sessionId}/treatment`, { replace: true });
+  };
 
   // Answer states
   const [textAnswer, setTextAnswer] = useState('');
@@ -86,21 +148,61 @@ export const InterviewPage = () => {
   const audioChunksRef = useRef([]);
 
   // Audio Playback state
-  const [isMuted, setIsMuted] = useState(false);
-  const [volume, setVolume] = useState(1);
+  const [volume, setVolume] = useState(() => {
+    const savedVol = sessionStorage.getItem('medikiosk_audio_volume');
+    return savedVol !== null ? parseFloat(savedVol) : 1;
+  });
+  const [isMuted, setIsMuted] = useState(() => {
+    const savedMute = sessionStorage.getItem('medikiosk_audio_muted');
+    return savedMute === 'true';
+  });
+
   const audioPlayerRef = useRef(new Audio());
   const { speak } = useSpeechSynthesis();
+
+  const handleVolumeChange = (newVol) => {
+    setVolume(newVol);
+    sessionStorage.setItem('medikiosk_audio_volume', newVol.toString());
+    if (audioPlayerRef.current) {
+      audioPlayerRef.current.volume = newVol;
+    }
+  };
+
+  const handleMuteChange = (muted) => {
+    setIsMuted(muted);
+    sessionStorage.setItem('medikiosk_audio_muted', muted ? 'true' : 'false');
+    if (muted) {
+      if (audioPlayerRef.current) {
+        audioPlayerRef.current.pause();
+      }
+      window.speechSynthesis.cancel();
+    } else {
+      playQuestionAudio();
+    }
+  };
   
   const initialFetchDoneRef = useRef(false);
 
-  const [isCompleting, setIsCompleting] = useState(false);
+  // Helper to persist preferred input mode during current session
+  const updatePreferredMode = (mode) => {
+    setPreferredInputMode(mode);
+    sessionStorage.setItem('medikiosk_preferred_input_mode', mode);
+  };
+
+  const handleSelectMode = (mode) => {
+    if (mode === 'BUTTON' && buttonOptions.length === 0) {
+      return;
+    }
+    updatePreferredMode(mode);
+    setAnswerMode(mode);
+  };
 
   const fetchNextQuestion = async (answerData = null) => {
     setLoading(true);
     setErrorMsg('');
     try {
       if (!answerData) {
-        console.log("[Interview] No cached question, requesting first question");
+        console.log("[Interview] Requesting initial question");
       } else {
         console.log("[Interview] Requesting next question after answer");
       }
@@ -108,27 +210,19 @@ export const InterviewPage = () => {
       const response = await getNextQuestion(sessionId, answerData);
       
       if (response.question_key === 'last_question') {
-        // Complete session
         setQuestionKey('last_question');
         sessionStorage.removeItem(`medikiosk_current_question_${sessionId}`);
         await handleFinishQuestions();
         return;
       }
       
+      const newBtnOpts = response.button_options || [];
       setQuestionKey(response.question_key);
       setQuestionText(response.question_text);
-      setButtonOptions(response.button_options || []);
+      setButtonOptions(newBtnOpts);
       setQuestionAudio(response.question_audio || response.audio_url || null);
       
-      let nextQuestionNumber = questionNumber;
-      if (answerData) {
-        // This is a next question
-        nextQuestionNumber = questionNumber + 1;
-      } else {
-        // This is the first question
-        nextQuestionNumber = 1;
-      }
-      
+      let nextQuestionNumber = answerData ? questionNumber + 1 : 1;
       setQuestionNumber(nextQuestionNumber);
       
       // Cache the current question
@@ -137,21 +231,27 @@ export const InterviewPage = () => {
         questionNumber: nextQuestionNumber,
         questionKey: response.question_key,
         questionText: response.question_text,
-        buttonOptions: response.button_options || [],
+        buttonOptions: newBtnOpts,
         questionAudio: response.question_audio || response.audio_url || null
       };
       sessionStorage.setItem(`medikiosk_current_question_${sessionId}`, JSON.stringify(cacheData));
-      console.log("[Interview] Saved current question");
       
-      // Reset answers
+      // Reset input fields
       setTextAnswer('');
       setSelectedButton('');
       setAudioBlob(null);
       setAudioUrl('');
       
-      // Reset mode intelligently
-      if (response.button_options && response.button_options.length > 0) {
-        setAnswerMode('BUTTON');
+      // Intelligently select active mode using stored preferredInputMode
+      const storedPref = sessionStorage.getItem('medikiosk_preferred_input_mode') || 'VOICE';
+      if (storedPref === 'BUTTON') {
+        if (newBtnOpts.length > 0) {
+          setAnswerMode('BUTTON');
+        } else {
+          setAnswerMode('VOICE');
+        }
+      } else if (storedPref === 'TYPE') {
+        setAnswerMode('TYPE');
       } else {
         setAnswerMode('VOICE');
       }
@@ -186,12 +286,11 @@ export const InterviewPage = () => {
     }
   };
 
-  // Initial fetch
+  // Initial fetch / restore from sessionStorage
   useEffect(() => {
     if (initialFetchDoneRef.current) return;
     initialFetchDoneRef.current = true;
     
-    // Check sessionStorage
     const cacheKey = `medikiosk_current_question_${sessionId}`;
     const cachedDataStr = sessionStorage.getItem(cacheKey);
     
@@ -202,19 +301,22 @@ export const InterviewPage = () => {
           console.log("[Interview] Restoring current question from sessionStorage");
           setQuestionKey(cachedData.questionKey);
           setQuestionText(cachedData.questionText);
-          setButtonOptions(cachedData.buttonOptions || []);
+          const cachedOpts = cachedData.buttonOptions || [];
+          setButtonOptions(cachedOpts);
           setQuestionAudio(cachedData.questionAudio || null);
           setQuestionNumber(cachedData.questionNumber || 1);
           
-          if (cachedData.buttonOptions && cachedData.buttonOptions.length > 0) {
+          const storedPref = sessionStorage.getItem('medikiosk_preferred_input_mode') || 'VOICE';
+          if (storedPref === 'BUTTON' && cachedOpts.length > 0) {
             setAnswerMode('BUTTON');
+          } else if (storedPref === 'TYPE') {
+            setAnswerMode('TYPE');
           } else {
             setAnswerMode('VOICE');
           }
           
           setLoading(false);
           
-          // Recreate qData format for playQuestionAudio
           const qData = {
             question_text: cachedData.questionText,
             question_audio: cachedData.questionAudio || null
@@ -230,7 +332,6 @@ export const InterviewPage = () => {
     fetchNextQuestion();
     
     return () => {
-      // Cleanup
       if (audioPlayerRef.current) {
         audioPlayerRef.current.pause();
       }
@@ -261,7 +362,6 @@ export const InterviewPage = () => {
     if (audioToPlay) {
       let audioSrc = audioToPlay;
 
-      // Django sends base64 audio
       if (!audioToPlay.startsWith('http') && !audioToPlay.startsWith('data:')) {
         audioSrc = `data:audio/wav;base64,${audioToPlay}`;
       }
@@ -272,7 +372,7 @@ export const InterviewPage = () => {
 
       audio.play().catch((e) => {
         console.error("Audio play error:", e);
-        speak(textToPlay, speechLang); // fallback
+        speak(textToPlay, speechLang);
       });
 
     } else if (textToPlay) {
@@ -303,11 +403,7 @@ export const InterviewPage = () => {
       mediaRecorderRef.current.onstop = async () => {
         try {
           const webmBlob = new Blob(audioChunksRef.current, { type: mediaRecorderRef.current.mimeType || 'audio/webm' });
-          console.log("Audio type before conversion:", webmBlob.type);
-          console.log("Audio size before conversion:", webmBlob.size);
           const wavBlob = await convertToWav(webmBlob);
-          console.log("Audio type after conversion:", wavBlob.type);
-          console.log("Audio size after conversion:", wavBlob.size);
           setAudioBlob(wavBlob);
           setAudioUrl(URL.createObjectURL(wavBlob));
         } catch (e) {
@@ -316,7 +412,6 @@ export const InterviewPage = () => {
           setAudioBlob(fallbackBlob);
           setAudioUrl(URL.createObjectURL(fallbackBlob));
         }
-        // Release tracks
         stream.getTracks().forEach(track => track.stop());
       };
       
@@ -342,9 +437,25 @@ export const InterviewPage = () => {
     startRecording();
   };
 
+  // Option Click in BUTTON mode
+  const handleOptionClick = (opt) => {
+    if (loading || isRecording) return;
+    setSelectedButton(opt);
+    updatePreferredMode('BUTTON');
+
+    const answerData = {
+      question_key: questionKey,
+      question_text: questionText,
+      input_type: 'TOUCH',
+      answer_text: opt
+    };
+
+    fetchNextQuestion(answerData);
+  };
+
   // Submit Answer
   const handleSubmit = () => {
-    if (loading) return;
+    if (loading || isRecording) return;
 
     let answerData = {
       question_key: questionKey,
@@ -352,200 +463,267 @@ export const InterviewPage = () => {
     };
 
     if (answerMode === 'VOICE') {
-
       if (!audioBlob) {
-        setErrorMsg('Please record an answer before submitting.');
+        setErrorMsg('Please record your answer before submitting.');
         return;
       }
-
       answerData.input_type = 'VOICE';
       answerData.audioBlob = audioBlob;
+      updatePreferredMode('VOICE');
 
     } else if (answerMode === 'TYPE') {
-
       if (!textAnswer.trim()) {
-        setErrorMsg('Please type an answer before submitting.');
+        setErrorMsg('Please type your answer before submitting.');
         return;
       }
-
       answerData.input_type = 'TEXT';
       answerData.answer_text = textAnswer.trim();
+      updatePreferredMode('TYPE');
 
     } else if (answerMode === 'BUTTON') {
-
       if (!selectedButton) {
         setErrorMsg('Please select an option before submitting.');
         return;
       }
-
       answerData.input_type = 'TOUCH';
       answerData.answer_text = selectedButton;
+      updatePreferredMode('BUTTON');
     }
-
-    console.log("Submitting answer:", answerData);
 
     fetchNextQuestion(answerData);
   };
 
   return (
     <PageContainer>
-      <div style={{ textAlign: 'center', marginBottom: '1rem', color: '#666' }}>
-        <p style={{ margin: '0' }}>Session ID: {sessionId}</p>
-        <p style={{ margin: '5px 0' }}>Session started</p>
-      </div>
-      
-      {loading && !questionKey ? (
-        <div style={{ textAlign: 'center', marginTop: '2rem' }}>
-          <h2>Loading...</h2>
-        </div>
-      ) : (
-        <div style={{ width: '100%', maxWidth: '600px', margin: '0 auto', textAlign: 'center' }}>
-          <h3 style={{ marginTop: '0', color: '#333' }}>Question {questionNumber}</h3>
+      <div className="interview-main-card">
+        {/* Top Session Information */}
+        <div className="interview-header-info">
+          <h2 className="interview-session-id">
+            Session ID: <span className="session-id-val">{sessionId ? sessionId.toUpperCase() : ''}</span>
+          </h2>
+          <p className="interview-session-status">Session started</p>
+          <div className="interview-progress-pill-line"></div>
           
-          <div style={{ marginBottom: '2rem', padding: '1rem', background: '#f9f9f9', borderRadius: '12px' }}>
-            <h2 style={{ fontSize: '2.5rem', marginBottom: '1rem', color: '#333' }}>
-              {questionText}
-            </h2>
-            
-            {/* Audio Controls */}
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '1rem', flexWrap: 'wrap' }}>
-              <Button onClick={() => playQuestionAudio()} variant="secondary" style={{ padding: '10px 20px' }}>
-                Play Audio
-              </Button>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                <label htmlFor="volume">Volume:</label>
+          <div className="question-badge-container">
+            <span className="kiosk-question-badge">
+              Question {questionNumber}
+            </span>
+          </div>
+        </div>
+
+        {loading && !questionKey ? (
+          <div className="interview-loading-state">
+            <div className="kiosk-spinner"></div>
+            <h3>Loading interview...</h3>
+          </div>
+        ) : (
+          <div className="interview-body-content">
+            {/* Blue Question Container with Play Audio & Question Text Inside */}
+            <div className="kiosk-question-blue-box">
+              <button 
+                type="button" 
+                onClick={() => playQuestionAudio()} 
+                className="play-audio-btn"
+              >
+                <span className="audio-icon-wrapper">
+                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                    <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
+                    <path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"></path>
+                  </svg>
+                </span>
+                <span className="play-audio-text">{t.playAudio || 'Play Audio'}</span>
+              </button>
+
+              <h1 className="kiosk-question-text">
+                {questionText}
+              </h1>
+            </div>
+
+            {/* Inline Volume & Mute Controls Below Blue Question Box */}
+            <div className="audio-controls-row">
+              <div className="volume-group">
+                <label htmlFor="volume-slider">{t.volumeLabel || 'Volume:'}</label>
                 <input 
-                  id="volume"
+                  id="volume-slider"
                   type="range" 
                   min="0" max="1" step="0.1" 
                   value={volume} 
-                  onChange={(e) => setVolume(parseFloat(e.target.value))}
+                  onChange={(e) => handleVolumeChange(parseFloat(e.target.value))}
+                  className="kiosk-slider"
                 />
               </div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
+              <div className="mute-group">
                 <input 
                   type="checkbox" 
-                  id="mute" 
+                  id="mute-toggle" 
                   checked={isMuted} 
-                  onChange={(e) => {
-                    setIsMuted(e.target.checked);
-                    if (e.target.checked && audioPlayerRef.current) {
-                      audioPlayerRef.current.pause();
-                      window.speechSynthesis.cancel();
-                    }
-                  }} 
-                  style={{ transform: 'scale(1.5)' }}
+                  onChange={(e) => handleMuteChange(e.target.checked)} 
+                  className="kiosk-checkbox"
                 />
-                <label htmlFor="mute">Mute</label>
+                <label htmlFor="mute-toggle">{t.muteLabel || 'Mute'}</label>
               </div>
             </div>
-          </div>
 
-          {/* Answer Modes */}
-          <div style={{ display: 'flex', justifyContent: 'center', gap: '10px', marginBottom: '2rem' }}>
-            <Button 
-              onClick={() => setAnswerMode('VOICE')} 
-              variant={answerMode === 'VOICE' ? 'primary' : 'outline'}
-            >
-              VOICE
-            </Button>
-            <Button 
-              onClick={() => setAnswerMode('BUTTON')} 
-              variant={answerMode === 'BUTTON' ? 'primary' : 'outline'}
-              disabled={buttonOptions.length === 0}
-            >
-              BUTTON
-            </Button>
-            <Button 
-              onClick={() => setAnswerMode('TYPE')} 
-              variant={answerMode === 'TYPE' ? 'primary' : 'outline'}
-            >
-              TYPE
-            </Button>
-          </div>
+            {/* Answer Mode Switcher Tabs */}
+            <div className="mode-tabs-grid">
+              <button 
+                type="button"
+                onClick={() => handleSelectMode('VOICE')} 
+                className={`mode-tab-btn ${answerMode === 'VOICE' ? 'active' : ''}`}
+              >
+                <span className="tab-icon">🔊</span>
+                <span>{t.voiceTab || 'VOICE'}</span>
+              </button>
 
-          {/* Error Message */}
-          {errorMsg && (
-            <div style={{ color: 'red', marginBottom: '1rem', fontSize: '1.2rem' }}>
-              {errorMsg}
-              {isCompleting && (
-                <div style={{ marginTop: '1rem' }}>
-                  <Button onClick={handleFinishQuestions} variant="primary">
+              <button 
+                type="button"
+                onClick={() => handleSelectMode('BUTTON')} 
+                className={`mode-tab-btn ${answerMode === 'BUTTON' ? 'active' : ''} ${buttonOptions.length === 0 ? 'disabled' : ''}`}
+                disabled={buttonOptions.length === 0}
+                title={buttonOptions.length === 0 ? "No button options available for this question" : ""}
+              >
+                <span className="tab-icon">☝️</span>
+                <span>{t.buttonTab || 'BUTTON'}</span>
+              </button>
+
+              <button 
+                type="button"
+                onClick={() => handleSelectMode('TYPE')} 
+                className={`mode-tab-btn ${answerMode === 'TYPE' ? 'active' : ''}`}
+              >
+                <span className="tab-icon">⌨️</span>
+                <span>{t.typeTab || 'TYPE'}</span>
+              </button>
+            </div>
+
+            {/* Error Display */}
+            {errorMsg && (
+              <div className="interview-error-msg">
+                <p>{errorMsg}</p>
+                {isCompleting && (
+                  <Button onClick={handleFinishQuestions} variant="primary" style={{ marginTop: '0.5rem' }}>
                     Retry Finalizing Session
                   </Button>
+                )}
+              </div>
+            )}
+
+            {/* Input Action Area */}
+            <div className="mode-input-area">
+              {answerMode === 'VOICE' && (
+                <div className="voice-action-wrapper">
+                  {!isRecording && !audioBlob && (
+                    <button 
+                      type="button"
+                      onClick={startRecording} 
+                      className="kiosk-primary-action-btn voice-idle-btn"
+                    >
+                      <span className="btn-icon">🎤</span>
+                      <span>{t.tapToSpeak || 'Tap to Speak'}</span>
+                    </button>
+                  )}
+
+                  {isRecording && (
+                    <button 
+                      type="button"
+                      onClick={stopRecording} 
+                      className="kiosk-primary-action-btn voice-recording-btn"
+                    >
+                      <span className="recording-pulse"></span>
+                      <span className="btn-icon">🎤</span>
+                      <span>{t.listening || 'Listening... (Tap to Stop)'}</span>
+                    </button>
+                  )}
+
+                  {audioBlob && (
+                    <div className="recorded-preview-container">
+                      <audio src={audioUrl} controls className="preview-audio-player" />
+                      <button 
+                        type="button"
+                        onClick={replaceRecording} 
+                        className="kiosk-secondary-action-btn"
+                      >
+                        🎤 {t.recordAgain || 'Record Again'}
+                      </button>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {answerMode === 'BUTTON' && (
+                <div className="button-options-wrapper">
+                  {buttonOptions.length > 0 ? (
+                    <div className="options-buttons-grid">
+                      {buttonOptions.map((opt, i) => (
+                        <button 
+                          key={i} 
+                          type="button"
+                          onClick={() => handleOptionClick(opt)}
+                          className={`kiosk-option-card ${selectedButton === opt ? 'selected' : ''}`}
+                        >
+                          {opt}
+                        </button>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="no-button-options-msg">Please use Voice or Type to answer this question.</p>
+                  )}
+                </div>
+              )}
+
+              {answerMode === 'TYPE' && (
+                <div className="type-input-wrapper">
+                  <textarea 
+                    value={textAnswer}
+                    onChange={(e) => setTextAnswer(e.target.value)}
+                    placeholder={t.typePlaceholder || "Type your answer here..."}
+                    className="kiosk-large-textarea"
+                  />
                 </div>
               )}
             </div>
-          )}
 
-          {/* Answer Inputs */}
-          <div style={{ marginBottom: '2rem', minHeight: '150px' }}>
-            {answerMode === 'VOICE' && (
-              <div>
-                {!isRecording && !audioBlob && (
-                  <Button onClick={startRecording} variant="primary" size="large" style={{ background: '#d32f2f', color: 'white' }}>
-                    Start Recording
-                  </Button>
-                )}
-                {isRecording && (
-                  <Button onClick={stopRecording} variant="primary" size="large">
-                    Stop Recording
-                  </Button>
-                )}
-                {audioBlob && (
-                  <div>
-                    <audio src={audioUrl} controls style={{ marginBottom: '1rem' }} />
-                    <br />
-                    <Button onClick={replaceRecording} variant="secondary">
-                      Replace Recording
-                    </Button>
-                  </div>
-                )}
-              </div>
-            )}
-
-            {answerMode === 'BUTTON' && (
-              <div>
-                {buttonOptions.length > 0 ? (
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                    {buttonOptions.map((opt, i) => (
-                      <Button 
-                        key={i} 
-                        onClick={() => setSelectedButton(opt)}
-                        variant={selectedButton === opt ? 'primary' : 'outline'}
-                        size="large"
-                      >
-                        {opt}
-                      </Button>
-                    ))}
-                  </div>
-                ) : (
-                  <p>Please use Voice or Type to answer this question.</p>
-                )}
-              </div>
-            )}
-
-            {answerMode === 'TYPE' && (
-              <textarea 
-                value={textAnswer}
-                onChange={(e) => setTextAnswer(e.target.value)}
-                placeholder="Type your answer here..."
-                style={{
-                  width: '100%',
-                  height: '150px',
-                  fontSize: '1.5rem',
-                  padding: '1rem',
-                  borderRadius: '8px',
-                  border: '1px solid #ccc'
-                }}
-              />
-            )}
+            {/* Submit / Continue Button */}
+            <div className="submit-area">
+              <button 
+                type="button"
+                onClick={handleSubmit} 
+                disabled={loading || isRecording}
+                className="kiosk-submit-btn"
+              >
+                {loading ? 'Please wait...' : (t.submitContinue || 'Submit / Continue →')}
+              </button>
+            </div>
           </div>
+        )}
+      </div>
 
-          <Button onClick={handleSubmit} variant="primary" size="large" disabled={loading || isRecording} style={{ width: '100%' }}>
-            {loading ? 'Please wait...' : 'Submit / Continue'}
-          </Button>
-
+      {/* Browser Back Confirmation Modal for AI Phase */}
+      {showBackModal && (
+        <div className="kiosk-modal-overlay">
+          <div className="kiosk-modal-card">
+            <div className="kiosk-modal-icon">⚠️</div>
+            <h2 className="kiosk-modal-title">{t.backWarningTitle || 'Start New Test?'}</h2>
+            <p className="kiosk-modal-message">
+              {t.backWarningMessage || 'Going back will start a new test and your current interview progress will be cleared. Do you want to continue?'}
+            </p>
+            <div className="kiosk-modal-actions">
+              <button 
+                type="button" 
+                onClick={handleCancelBack}
+                className="kiosk-secondary-action-btn"
+              >
+                {t.cancelBtn || 'Cancel'}
+              </button>
+              <button 
+                type="button" 
+                onClick={handleConfirmNewTest}
+                className="kiosk-submit-btn danger-btn"
+              >
+                {t.okBtn || 'OK'}
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </PageContainer>

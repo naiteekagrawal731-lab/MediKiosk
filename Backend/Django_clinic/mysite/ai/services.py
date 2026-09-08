@@ -552,6 +552,7 @@ def get_next_question(
         "button_options": button_options,
         "is_final": False,
     }
+    
 def complete_questions(session_id):
     
     session = get_session_or_404(session_id)
