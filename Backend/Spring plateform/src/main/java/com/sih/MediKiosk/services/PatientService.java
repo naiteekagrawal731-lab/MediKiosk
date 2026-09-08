@@ -45,7 +45,7 @@ public class PatientService {
                         .password(request.getPassword())
                         .username(request.getUsername())
                 .build());
-        String username = SecurityContextHolder.getContext().getAuthentication().getName();
+        String username = request.getUsername();
         User user = userService.getUserByUsername(username).orElseThrow(() -> new UsernameNotFound("User with username = "+username+" does not exist"));
 
         Patient patient = Patient.builder()
