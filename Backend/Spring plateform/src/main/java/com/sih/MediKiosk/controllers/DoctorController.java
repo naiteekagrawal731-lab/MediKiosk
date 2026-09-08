@@ -26,6 +26,7 @@ public class DoctorController {
 
     @PostMapping("/create")
     public ResponseEntity<?> createNewDoctor(@RequestBody CreateDoctorRequest request){
+        log.info(request.toString()+" jarves");
         return doctorService.createDoctor(request);
     }
 

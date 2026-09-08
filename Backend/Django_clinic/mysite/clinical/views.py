@@ -47,7 +47,7 @@ def get_session_or_404(session_id):
     
 class Getsession(APIView):
     def post(self,request):
-        return Response({"session_id":"OMKDJHGK"})
+        return Response({"session_id":"OMKDIHGK"})
 
 class StartSession(APIView):
 

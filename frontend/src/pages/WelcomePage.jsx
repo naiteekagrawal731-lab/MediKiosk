@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { PageContainer } from '../components/PageContainer';
 import { createSession } from '../services/springApi';
-import { createDjangoSession } from '../services/djangoApi';
 import { useSession } from '../context/SessionContext';
 
 export const WelcomePage = () => {
@@ -17,12 +16,14 @@ export const WelcomePage = () => {
     clearSession();
     
     try {
+      // Send request exclusively to Spring Boot to create clinical session
       const { session_id } = await createSession();
-      await createDjangoSession(session_id);
+      // Update active session context with Spring-generated Session ID
       updateSession({ sessionId: session_id });
+      // Navigate to language selection
       navigate(`/session/${session_id}/language`);
     } catch (error) {
-      console.error('Error creating session:', error);
+      console.error('Error starting session:', error);
       setErrorMsg(error.message || 'Unable to connect to the server. Please try again.');
     } finally {
       setLoading(false);
@@ -40,7 +41,9 @@ export const WelcomePage = () => {
             </svg>
           </div>
           <h1 className="welcome-hero-title">Welcome to MediKiosk</h1>
-          <p className="welcome-hero-subtitle">Your Digital Health History Assistant</p>
+          <p className="welcome-hero-subtitle">
+            Your Digital Health History Assistant
+          </p>
         </div>
 
         {/* Info & Feature Highlights Box */}
