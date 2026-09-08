@@ -8,6 +8,10 @@ import com.sih.MediKiosk.models.Doctor;
 import com.sih.MediKiosk.models.Hospital;
 import com.sih.MediKiosk.models.User;
 import com.sih.MediKiosk.repos.DoctorRepo;
+
+import jakarta.transaction.Transactional;
+import lombok.extern.slf4j.Slf4j;
+
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -16,6 +20,7 @@ import org.springframework.stereotype.Service;
 import javax.print.Doc;
 
 @Service
+@Slf4j 
 public class DoctorService {
 
     private final DoctorRepo doctorRepo;
@@ -33,21 +38,27 @@ public class DoctorService {
     }
 
     @PreAuthorize("hasRole('HOSPITAL')")
+    @Transactional 
     public ResponseEntity<?> createDoctor(CreateDoctorRequest request){
+        log.info("Creating new hospital with username = "+request.getUsername());
         String hospitalName = SecurityContextHolder.getContext().getAuthentication().getName();
+        log.info("Creating doctor for hospital = "+hospitalName);
         registrationService.register(RegistrationRequest.builder()
                         .username(request.getUsername())
                         .password(request.getPassword())
                 .build());
+        log.info("Doctor user profile created with username = "+request.getUsername());
         User user = userService.getUserByUsername(request.getUsername()).orElseThrow(() -> new RuntimeException("Doctor with username = "+request.getUsername()+" does not exist"));
+        log.info("Got the user");
         Doctor doctor = Doctor.builder()
                 .user(user)
                 .hospital(hospitalService.getHospitalFromUsername(hospitalName))
                 .licenseNumber(request.getLicenseNumber())
                 .qualification(request.getQualification())
                 .build();
-
+        log.info("Saviing doctor");
         doctorRepo.save(doctor);
+        log.info("Doctor saved");
         return ResponseEntity.status(201).body("Doctor id created successfully");
     }
 

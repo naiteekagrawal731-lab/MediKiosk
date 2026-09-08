@@ -36,7 +36,7 @@ public class AdminController {
     public ResponseEntity<?> deleteAdminById(@RequestParam UUID id){
         return userService.deleteAdmin(id);
     }
-    @GetMapping("/login")
+    @PostMapping("/login")
     public ResponseEntity<?> login(@RequestBody LoginRequest request){
         return usernamePasswordLoginService.login(request);
     }

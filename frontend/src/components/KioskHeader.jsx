@@ -1,9 +1,13 @@
 import React from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useSession } from '../context/SessionContext';
+import { getHospitalRegistrationNumber } from '../utils/kioskDevice';
 
 export const KioskHeader = () => {
+  const navigate = useNavigate();
   const { sessionData, updateSession } = useSession();
   const currentLang = sessionData?.language || 'EN';
+  const hospitalRegNum = getHospitalRegistrationNumber();
 
   const handleLanguageChange = (e) => {
     const newLang = e.target.value;
@@ -22,11 +26,34 @@ export const KioskHeader = () => {
         </div>
         <div className="kiosk-brand-text">
           <h1 className="kiosk-brand-title">MediKiosk</h1>
-          <p className="kiosk-brand-tagline">Your Health, Our Priority</p>
+          <p className="kiosk-brand-tagline">
+            {hospitalRegNum ? `Connected Kiosk (${hospitalRegNum})` : 'Your Health, Our Priority'}
+          </p>
         </div>
       </div>
 
       <div className="kiosk-header-right">
+        <button
+          type="button"
+          onClick={() => navigate('/staff')}
+          style={{
+            background: '#ffffff',
+            border: '2px solid #e2e8f0',
+            borderRadius: '999px',
+            padding: '0.35rem 0.85rem',
+            fontSize: '0.9rem',
+            fontWeight: 700,
+            color: '#475569',
+            cursor: 'pointer',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '0.35rem'
+          }}
+          title="Hospital Staff Portal"
+        >
+          <span>🔐</span> Staff
+        </button>
+
         <div className="kiosk-lang-selector">
           <span className="kiosk-lang-icon" aria-hidden="true">🌐</span>
           <select 

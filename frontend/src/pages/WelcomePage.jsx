@@ -1,32 +1,18 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { PageContainer } from '../components/PageContainer';
-import { createSession } from '../services/springApi';
-import { createDjangoSession } from '../services/djangoApi';
 import { useSession } from '../context/SessionContext';
 
 export const WelcomePage = () => {
   const navigate = useNavigate();
-  const { updateSession, clearSession } = useSession();
-  const [loading, setLoading] = useState(false);
-  const [errorMsg, setErrorMsg] = useState('');
+  const { clearSession } = useSession();
 
-  const handleStart = async () => {
-    setErrorMsg('');
-    setLoading(true);
+  const handleStart = () => {
+    // Clear any previous session state before starting a new consultation.
+    // Do NOT call /patient/clinicalsession here — the sessionId is obtained
+    // after the patient's guest/login choice on the RegisterPage.
     clearSession();
-    
-    try {
-      const { session_id } = await createSession();
-      await createDjangoSession(session_id);
-      updateSession({ sessionId: session_id });
-      navigate(`/session/${session_id}/language`);
-    } catch (error) {
-      console.error('Error creating session:', error);
-      setErrorMsg(error.message || 'Unable to connect to the server. Please try again.');
-    } finally {
-      setLoading(false);
-    }
+    navigate('/session/new/language');
   };
 
   return (
@@ -40,7 +26,9 @@ export const WelcomePage = () => {
             </svg>
           </div>
           <h1 className="welcome-hero-title">Welcome to MediKiosk</h1>
-          <p className="welcome-hero-subtitle">Your Digital Health History Assistant</p>
+          <p className="welcome-hero-subtitle">
+            Your Digital Health History Assistant
+          </p>
         </div>
 
         {/* Info & Feature Highlights Box */}
@@ -76,23 +64,16 @@ export const WelcomePage = () => {
           </div>
         </div>
 
-        {/* Error Display */}
-        {errorMsg && (
-          <div className="interview-error-msg" style={{ width: '100%', marginBottom: '1.5rem' }}>
-            {errorMsg}
-          </div>
-        )}
-
         {/* Action Button */}
         <div className="welcome-action-area" style={{ width: '100%' }}>
-          <button 
+          <button
             type="button"
-            onClick={handleStart} 
-            disabled={loading}
+            id="start-consultation-btn"
+            onClick={handleStart}
             className="kiosk-submit-btn"
             style={{ fontSize: '1.6rem', padding: '1.25rem' }}
           >
-            {loading ? 'Starting Consultation...' : 'Start Consultation →'}
+            Start Consultation →
           </button>
         </div>
       </div>
