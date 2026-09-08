@@ -2,6 +2,7 @@ package com.sih.MediKiosk.services;
 
 import com.sih.MediKiosk.dtos.requestDtos.CreatePatientRequest;
 import com.sih.MediKiosk.dtos.requestDtos.GetSessionRequest;
+import com.sih.MediKiosk.dtos.requestDtos.RegistrationRequest;
 import com.sih.MediKiosk.dtos.responseDtos.ClinicalSessionDto;
 import com.sih.MediKiosk.dtos.responseDtos.ClinicalSessionSummaryDto;
 import com.sih.MediKiosk.dtos.responseDtos.CreateSessionResponse;
@@ -40,6 +41,10 @@ public class PatientService {
 
     @Transactional
     public ResponseEntity<?> createNewPatient(CreatePatientRequest request){
+        registrationService.register(RegistrationRequest.builder()
+                        .password(request.getPassword())
+                        .username(request.getUsername())
+                .build());
         String username = SecurityContextHolder.getContext().getAuthentication().getName();
         User user = userService.getUserByUsername(username).orElseThrow(() -> new UsernameNotFound("User with username = "+username+" does not exist"));
 
