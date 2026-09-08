@@ -27,7 +27,6 @@ public class ClinicalSessionService {
     ClinicalSession createSession(){
         ClinicalSession clinicalSession = new ClinicalSession();
         clinicalSession.setId(randomIdGenerater.generate());
-        clinicalSessionRepo.save(clinicalSession);
         return clinicalSession;
     }
 

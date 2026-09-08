@@ -24,7 +24,7 @@ public class ClinicalSession {
     @JoinColumn(name = "patient_id")
     private Patient patient;
 
-    @OneToOne(fetch = FetchType.LAZY)
+    @OneToOne()
     @JoinColumn(name = "guest_id")
     private Guest guest;
 
