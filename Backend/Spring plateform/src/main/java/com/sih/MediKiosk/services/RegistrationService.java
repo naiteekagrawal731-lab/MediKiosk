@@ -40,6 +40,7 @@ public class RegistrationService {
                 .build();
 
         userRepository.save(user);
+        userRepository.flush();
         log.info("User registered successfully: {}", username);
 
         return ResponseEntity.status(201)

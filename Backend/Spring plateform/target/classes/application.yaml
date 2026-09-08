@@ -1,3 +1,7 @@
+django:
+  api:
+    key: 4fewjfiwfwoejrqioq
+
 spring:
   servlet:
     multipart:
@@ -6,9 +10,9 @@ spring:
 
 
   datasource:
-    url: ${DATABASE_URL:jdbc:postgresql://localhost:5432/mydb}
+    url: ${DATABASE_URL:jdbc:postgresql://localhost:5432/medikiosk}
     username: ${DATABASE_USERNAME:postgres}
-    password: ${DATABASE_PASSWORD:password}
+    password: ${DATABASE_PASSWORD:sqllitepython}
 
 
 
@@ -20,9 +24,9 @@ spring:
   sql:
     init:
       mode: always
-
 server:
   port: 8081
+
 
 # JWT secret must be at least 32 chars (256 bits) for HS256
 jwt:

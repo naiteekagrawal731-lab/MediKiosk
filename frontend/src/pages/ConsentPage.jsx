@@ -1,8 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { PageContainer } from '../components/PageContainer';
-import { Button } from '../components/Button';
 import { ProgressIndicator } from '../components/ProgressIndicator';
+import { AudioControlBar } from '../components/AudioControlBar';
 import { useSession } from '../context/SessionContext';
 import { translations } from '../utils/translations';
 import { useSpeechSynthesis } from '../hooks/useSpeechSynthesis';
@@ -12,15 +12,50 @@ export const ConsentPage = () => {
   const { sessionId } = useParams();
   const navigate = useNavigate();
   const { sessionData, updateSession } = useSession();
-  const { speak } = useSpeechSynthesis();
+  const { speak, cancel } = useSpeechSynthesis();
   const [errorMsg, setErrorMsg] = useState('');
 
+  const [volume, setVolume] = useState(() => {
+    const savedVol = sessionStorage.getItem('medikiosk_audio_volume');
+    return savedVol !== null ? parseFloat(savedVol) : 1;
+  });
+  const [isMuted, setIsMuted] = useState(() => {
+    const savedMute = sessionStorage.getItem('medikiosk_audio_muted');
+    return savedMute === 'true';
+  });
+
   const lang = sessionData.language || 'EN';
-  const t = translations[lang];
+  const t = translations[lang] || translations['EN'];
+
+  const playSpeech = (customMuted = isMuted, customVol = volume) => {
+    if (!customMuted) {
+      speak(t.consentQuestion, lang, { volume: customVol, isMuted: customMuted });
+    } else {
+      cancel();
+    }
+  };
+
+  const handleVolumeChange = (newVol) => {
+    setVolume(newVol);
+    sessionStorage.setItem('medikiosk_audio_volume', newVol.toString());
+    if (!isMuted) {
+      playSpeech(false, newVol);
+    }
+  };
+
+  const handleMuteChange = (muted) => {
+    setIsMuted(muted);
+    sessionStorage.setItem('medikiosk_audio_muted', muted ? 'true' : 'false');
+    if (muted) {
+      cancel();
+    } else {
+      playSpeech(false, volume);
+    }
+  };
 
   useEffect(() => {
-    speak(t.consentQuestion, lang);
-  }, [speak, t.consentQuestion, lang]);
+    playSpeech(isMuted, volume);
+  }, [lang]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleConsent = (given) => {
     if (given) {
@@ -32,33 +67,73 @@ export const ConsentPage = () => {
   };
 
   const handleGoBack = () => {
-    navigate('/');
+    navigate(`/session/${sessionId}/language`);
   };
 
   return (
     <PageContainer>
-      <ProgressIndicator step={2} total={4} />
-      
-      <SpeakerButton onClick={() => speak(t.consentQuestion, lang)} />
-      <h2 className="kiosk-question">{t.consentQuestion}</h2>
-
-      <div className="kiosk-button-grid">
-        <Button onClick={() => handleConsent(true)} variant="primary">
-          {t.yesConsent}
-        </Button>
-        <Button onClick={() => handleConsent(false)} variant="outline">
-          {t.noConsent}
-        </Button>
-      </div>
-
-      {errorMsg && (
-        <div style={{ marginTop: '2rem', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '1rem' }}>
-          <p className="kiosk-message">{errorMsg}</p>
-          <Button onClick={handleGoBack} variant="secondary" className="w-auto px-6 py-3 text-lg">
-            Start Again
-          </Button>
+      <div className="interview-main-card">
+        <div className="interview-header-info">
+          <h2 className="interview-session-id">
+            Session ID: <span className="session-id-val">{sessionId ? sessionId.toUpperCase() : ''}</span>
+          </h2>
+          <ProgressIndicator step={2} total={4} />
         </div>
-      )}
+
+        <div className="interview-body-content">
+          <div className="kiosk-question-header-row">
+            <SpeakerButton onClick={() => playSpeech(false, volume)} />
+            <h1 className="kiosk-question-text" style={{ fontSize: '2rem' }}>
+              {t.consentQuestion}
+            </h1>
+          </div>
+
+          <AudioControlBar 
+            onPlayAudio={() => playSpeech(false, volume)}
+            volume={volume}
+            setVolume={handleVolumeChange}
+            isMuted={isMuted}
+            setIsMuted={handleMuteChange}
+            lang={lang}
+          />
+
+          <div className="options-buttons-grid" style={{ maxWidth: '540px', margin: '1.5rem auto 0 auto' }}>
+            <button 
+              type="button"
+              onClick={() => handleConsent(true)} 
+              className="kiosk-option-card selected"
+              style={{ padding: '1.4rem', fontSize: '1.5rem' }}
+            >
+              ✅ {t.yesConsent}
+            </button>
+            <button 
+              type="button"
+              onClick={() => handleConsent(false)} 
+              className="kiosk-option-card"
+              style={{ padding: '1.4rem', fontSize: '1.5rem' }}
+            >
+              ❌ {t.noConsent}
+            </button>
+          </div>
+
+          <div style={{ maxWidth: '540px', margin: '1.25rem auto 0 auto' }}>
+            <button 
+              type="button" 
+              onClick={handleGoBack} 
+              className="kiosk-secondary-action-btn"
+              style={{ width: '100%' }}
+            >
+              {t.backBtn || '← Back'}
+            </button>
+          </div>
+
+          {errorMsg && (
+            <div style={{ marginTop: '1.5rem', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '1rem' }}>
+              <div className="interview-error-msg">{errorMsg}</div>
+            </div>
+          )}
+        </div>
+      </div>
     </PageContainer>
   );
 };

@@ -1,8 +1,8 @@
-const DJANGO_API_URL = import.meta.env.VITE_DJANGO_API_URL || 'http://localhost:8000';
+const SPRING_API_URL = import.meta.env.VITE_SPRING_API_URL || 'http://localhost:8000';
 
 export const createDjangoSession = async (sessionId) => {
   try {
-    const response = await fetch(`${DJANGO_API_URL}/api/clinical/session/`, {
+    const response = await fetch(`${SPRING_API_URL}/api/clinical/session/`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ session_id: sessionId })

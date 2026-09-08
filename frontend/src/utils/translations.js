@@ -8,12 +8,18 @@ export const translations = {
     existingPatientQuestion: "Do you already have an account?",
     existingPatient: "Existing Patient",
     guest: "Continue as Guest",
+    registrationTitle: "Patient Registration",
     nameLabel: "Your Name",
     ageLabel: "Your Age",
+    genderLabel: "Gender",
+    male: "Male",
+    female: "Female",
+    otherGender: "Other",
     mobileLabel: "Mobile Number",
     dobLabel: "Date of Birth",
     bloodGroupLabel: "Blood Group",
-    continueBtn: "Continue",
+    continueBtn: "Continue →",
+    backBtn: "← Back",
     treatmentQuestion: "What type of treatment are you seeking?",
     ayush: "AYUSH (Ayurvedic)",
     allopathic: "Allopathic",
@@ -27,7 +33,26 @@ export const translations = {
     autoEndNotice: "Session will end automatically in",
     seconds: "seconds",
     endSession: "End Session",
-    playAlert: "Play Staff Alert"
+    playAlert: "Play Staff Alert",
+    
+    // UI Translation Keys
+    tapToSpeak: "Tap to Speak",
+    listening: "Listening... (Tap to Stop)",
+    recordAgain: "Record Again",
+    playAudio: "Play Audio",
+    volumeLabel: "Volume:",
+    muteLabel: "Mute",
+    submitContinue: "Submit / Continue →",
+    voiceTab: "VOICE",
+    buttonTab: "BUTTON",
+    typeTab: "TYPE",
+    typePlaceholder: "Type your answer here...",
+
+    // Back Warning Modal Translations
+    backWarningTitle: "Start New Test?",
+    backWarningMessage: "Going back will start a new test and your current interview progress will be cleared. Do you want to continue?",
+    cancelBtn: "Cancel",
+    okBtn: "OK"
   },
   HI: {
     languageQuestion: "कृपया अपनी पसंदीदा भाषा चुनें",
@@ -38,12 +63,18 @@ export const translations = {
     existingPatientQuestion: "क्या आपका पहले से खाता है?",
     existingPatient: "मौजूदा मरीज",
     guest: "अतिथि के रूप में जारी रखें",
+    registrationTitle: "मरीज पंजीकरण",
     nameLabel: "आपका नाम",
     ageLabel: "आपकी उम्र",
+    genderLabel: "लिंग",
+    male: "पुरुष",
+    female: "महिला",
+    otherGender: "अन्य",
     mobileLabel: "मोबाइल नंबर",
     dobLabel: "जन्म तिथि",
     bloodGroupLabel: "ब्लड ग्रुप",
-    continueBtn: "जारी रखें",
+    continueBtn: "जारी रखें →",
+    backBtn: "← पीछे जाएं",
     treatmentQuestion: "आप किस प्रकार का उपचार चाहते हैं?",
     ayush: "आयुष (आयुर्वेदिक)",
     allopathic: "एलोपैथिक",
@@ -57,7 +88,25 @@ export const translations = {
     autoEndNotice: "सेशन अपने आप समाप्त हो जाएगा:",
     seconds: "सेकंड में",
     endSession: "सेशन समाप्त करें",
-    playAlert: "स्टाफ अलर्ट बजाएं"
+    playAlert: "स्टाफ अलर्ट बजाएं",
+
+    // UI Translation Keys in Hindi
+    tapToSpeak: "बोलने के लिए टैप करें",
+    listening: "सुन रहे हैं... (रोकने के लिए टैप करें)",
+    recordAgain: "फिर से रिकॉर्ड करें",
+    playAudio: "ऑडियो सुनें",
+    volumeLabel: "आवाज:",
+    muteLabel: "म्यूट",
+    submitContinue: "सबमिट / आगे बढ़ें →",
+    voiceTab: "बोलें",
+    buttonTab: "बटन",
+    typeTab: "टाइप करें",
+    typePlaceholder: "अपना उत्तर यहाँ लिखें...",
+
+    // Back Warning Modal Translations in Hindi
+    backWarningTitle: "नया टेस्ट शुरू करें?",
+    backWarningMessage: "पीछे जाने से एक नया टेस्ट शुरू होगा और आपकी वर्तमान साक्षात्कार प्रगति मिटा दी जाएगी। क्या आप जारी रखना चाहते हैं?",
+    cancelBtn: "रद्द करें",
+    okBtn: "ठीक है"
   }
 };
-

@@ -31,7 +31,7 @@ public class HospitalController {
         log.info("Hospital creation request = "+request.toString());
         return hospitalService.createNewHospital(request);
     }
-    @GetMapping("/login")
+    @PostMapping ("/login")
     public ResponseEntity<?> login(@RequestBody LoginRequest request){
         return usernamePasswordLoginService.login(request);
     }
