@@ -31,15 +31,14 @@ public class PatientService {
     private final UserService userService;
     private final ClinicalSessionService clinicalSessionService;
     private final ClinicalSessionMapper clinicalSessionMapper;
-    private final UsernamePasswordLoginService usernamePasswordLoginService;
 
-    public PatientService(PatientRepo patientRepo, RegistrationService registrationService, UserService userService, ClinicalSessionService clinicalSessionService, ClinicalSessionMapper clinicalSessionMapper, UsernamePasswordLoginService usernamePasswordLoginService) {
+
+    public PatientService(PatientRepo patientRepo, RegistrationService registrationService, UserService userService, ClinicalSessionService clinicalSessionService, ClinicalSessionMapper clinicalSessionMapper) {
         this.patientRepo = patientRepo;
         this.registrationService = registrationService;
         this.userService = userService;
         this.clinicalSessionService = clinicalSessionService;
         this.clinicalSessionMapper = clinicalSessionMapper;
-        this.usernamePasswordLoginService = usernamePasswordLoginService;
     }
 
     @Transactional
@@ -60,10 +59,6 @@ public class PatientService {
                 .build();
 
         patientRepo.save(patient);
-        usernamePasswordLoginService.login(PatientLoginRequest.builder()
-                        .username(request.getUsername())
-                        .password(request.getPassword())
-                .build());
         return ResponseEntity.status(201).body("Paitent id created successfully");
     }
     Patient getPatientByUser(User user){
