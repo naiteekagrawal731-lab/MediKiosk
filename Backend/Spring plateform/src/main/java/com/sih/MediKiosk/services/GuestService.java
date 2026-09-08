@@ -47,11 +47,9 @@ public class GuestService {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).build();
         }
 
-        ClinicalSession clinicalSession = clinicalSessionService.createSession();
 
         Guest guest = Guest.builder()
                 .name(request.getUsername())
-                .clinicalSession(clinicalSession)
                 .phoneNumber(request.getPhoneNumber())
                 .dateOfBirth(request.getDateOfBirth())
                 .bloodGroup(request.getBloodGroup())
@@ -63,7 +61,7 @@ public class GuestService {
         // is DB-generated (@GeneratedValue). Using the un-saved reference in the
         // hospital collection causes TransientPropertyValueException on auto-flush.
         guest = guestRepo.save(guest);
-        clinicalSession.setGuest(guest);
+        ClinicalSession clinicalSession = clinicalSessionService.crateSession(guest);
 
         hospitalService.addGuestToHospitalPermission(hospitalUuid, guest);
 

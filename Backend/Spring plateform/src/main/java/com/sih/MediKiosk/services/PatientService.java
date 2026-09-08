@@ -92,8 +92,7 @@ public class PatientService {
     public ResponseEntity<CreateSessionResponse> createSession(){
         User user = userService.getUserByUsername(SecurityContextHolder.getContext().getAuthentication().getName()).orElseThrow(() -> new RuntimeException("Username is invalid"));
         Patient patient = patientRepo.findByUser(user).orElseThrow(() -> new RuntimeException("Not a patient"));
-        ClinicalSession clinicalSession = clinicalSessionService.createSession();
-        clinicalSession.setPatient(patient);
+        ClinicalSession clinicalSession = clinicalSessionService.createSession(patient);
         patient.getClinicalSessions().add(clinicalSession);
         patientRepo.save(patient);
         return ResponseEntity.ok().body(CreateSessionResponse.builder()

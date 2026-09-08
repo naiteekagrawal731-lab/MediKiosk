@@ -4,7 +4,6 @@ import jakarta.persistence.*;
 import lombok.*;
 
 import java.time.LocalDateTime;
-import java.util.UUID;
 
 @Entity
 @Table(name = "clinical_sessions")
@@ -24,7 +23,8 @@ public class ClinicalSession {
     @JoinColumn(name = "patient_id")
     private Patient patient;
 
-    @OneToOne(mappedBy = "clinicalSession", cascade = {CascadeType.PERSIST, CascadeType.MERGE})
+    @OneToOne(fetch = FetchType.LAZY, cascade = CascadeType.ALL)
+    @JoinColumn(name = "guest_id")
     private Guest guest;
 
     private LocalDateTime createdAt;

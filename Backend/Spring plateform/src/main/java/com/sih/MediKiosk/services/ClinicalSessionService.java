@@ -24,13 +24,21 @@ public class ClinicalSessionService {
         this.djangoClient = djangoClient;
     }
 
-    ClinicalSession createSession(){
+    ClinicalSession createSession(Patient patient){
         ClinicalSession clinicalSession = new ClinicalSession();
         clinicalSession.setId(randomIdGenerater.generate());
+        clinicalSession.setPatient(patient);
         clinicalSessionRepo.save(clinicalSession);
-        clinicalSessionRepo.flush();
         return clinicalSession;
     }
+    ClinicalSession crateSession(Guest guest){
+        ClinicalSession clinicalSession = new ClinicalSession();
+        clinicalSession.setId(randomIdGenerater.generate());
+        clinicalSession.setGuest(guest);
+        clinicalSessionRepo.save(clinicalSession);
+        return clinicalSession;
+    }
+
 
 
 
