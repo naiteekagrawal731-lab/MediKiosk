@@ -1,5 +1,5 @@
 import { getHospitalRegistrationNumber } from '../utils/kioskDevice';
-import { apiFetch, refreshAccessToken } from './apiClient';
+import { apiFetch, refreshAccessToken, setAccessToken } from './apiClient';
 
 const SPRING_API_URL = import.meta.env.VITE_SPRING_API_URL || 'http://localhost:8080';
 
@@ -10,25 +10,31 @@ const SPRING_API_URL = import.meta.env.VITE_SPRING_API_URL || 'http://localhost:
  */
 export const createSession = async () => {
   try {
-    let response = await fetch(`${SPRING_API_URL}/patient/clinicalsession`, {
+    let response = await apiFetch('/patient/clinicalsession', {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
     });
 
     if (!response.ok && response.status === 404) {
       // Fallback path if endpoint is nested under /api/clinical/
-      response = await fetch(`${SPRING_API_URL}/api/clinical/patient/clinicalsession`, {
+      response = await apiFetch('/api/clinical/patient/clinicalsession', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
       });
     }
 
     if (!response.ok) {
-      throw new Error(`Server returned ${response.status}: ${response.statusText}`);
+      const resClone = response.clone();
+      let errorText = '';
+      try {
+        const errJson = await response.json();
+        errorText = errJson.message || errJson.error || '';
+      } catch {
+        try {
+          errorText = await resClone.text();
+        } catch {
+          // Ignore
+        }
+      }
+      throw new Error(errorText || `Server returned ${response.status}: ${response.statusText}`);
     }
 
     const data = await response.json();
@@ -40,7 +46,7 @@ export const createSession = async () => {
     return { session_id: sessionId, sessionId };
   } catch (error) {
     console.error('Spring API Error (createSession):', error);
-    throw new Error('Unable to connect to the server to create a session. Please try again.');
+    throw new Error(error.message || 'Unable to connect to the server to create a session. Please try again.');
   }
 };
 
@@ -75,12 +81,17 @@ export const registerGuestPatient = async (guestData) => {
 
     if (!response.ok) {
       let errorMsg = 'Failed to register guest patient.';
+      const resClone = response.clone();
       try {
         const errJson = await response.json();
         errorMsg = errJson.message || errJson.error || errorMsg;
       } catch {
-        const text = await response.text();
-        if (text) errorMsg = text;
+        try {
+          const text = await resClone.text();
+          if (text) errorMsg = text;
+        } catch {
+          // Ignore text reading failure
+        }
       }
       throw new Error(errorMsg);
     }
@@ -112,46 +123,43 @@ export const createPatientAccount = async (patientData) => {
     const response = await fetch(`${SPRING_API_URL}/patient/create`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      credentials: 'include', // Receive refresh token cookie
+      credentials: 'include',
       body: JSON.stringify(payload),
     });
 
     if (!response.ok) {
       let errorMsg = 'Failed to create patient account.';
+      const resClone = response.clone();
       try {
         const errJson = await response.json();
         errorMsg = errJson.message || errJson.error || errorMsg;
       } catch {
-        const text = await response.text();
-        if (text) errorMsg = text;
+        try {
+          const text = await resClone.text();
+          if (text) errorMsg = text;
+        } catch {
+          // Ignore
+        }
       }
       throw new Error(errorMsg);
     }
 
-    // Try acquiring access token via cookie refresh fallback
-    let token = null;
-    try {
-      token = await refreshAccessToken();
-    } catch (e) {
-      console.warn('Token refresh fallback after patient creation:', e);
-    }
-
-    let resBody = {};
-    try {
-      resBody = await response.json();
-    } catch {
-      resBody = { success: true };
-    }
+    // Automatically call loginPatient to authenticate & receive refresh token cookie + accessToken
+    const loginResult = await loginPatient({
+      username: payload.username,
+      password: payload.password,
+    });
 
     return {
       success: true,
-      accessToken: token || resBody.accessToken,
+      ...loginResult,
       user: {
         username: payload.username,
         gender: payload.gender,
         dateOfBirth: payload.dateOfBirth,
         bloodGroup: payload.bloodGroup,
         phoneNumber: payload.phoneNumber,
+        ...(loginResult.profile || {}),
       },
     };
   } catch (error) {
@@ -192,12 +200,17 @@ export const loginPatient = async (credentials) => {
 
     if (!response.ok) {
       let errorMsg = 'Patient login failed. Please check credentials.';
+      const resClone = response.clone();
       try {
         const errJson = await response.json();
         errorMsg = errJson.message || errJson.error || errorMsg;
       } catch {
-        const text = await response.text();
-        if (text) errorMsg = text;
+        try {
+          const text = await resClone.text();
+          if (text) errorMsg = text;
+        } catch {
+          // Ignore
+        }
       }
       throw new Error(errorMsg);
     }
@@ -216,9 +229,14 @@ export const loginPatient = async (credentials) => {
       resBody = { success: true };
     }
 
+    const activeToken = token || resBody.accessToken;
+    if (activeToken) {
+      setAccessToken(activeToken);
+    }
+
     return {
       success: true,
-      accessToken: token || resBody.accessToken,
+      accessToken: activeToken,
       username: payload.username,
       profile: resBody.profile || resBody.patient || null,
     };

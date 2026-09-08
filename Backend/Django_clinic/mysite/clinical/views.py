@@ -44,10 +44,6 @@ def get_session_or_404(session_id):
         return ClinicalSession.objects.get(session_id=session_id)
     except ClinicalSession.DoesNotExist:
         return None
-    
-class Getsession(APIView):
-    def post(self,request):
-        return Response({"session_id":"OMKDIHGK"})
 
 class StartSession(APIView):
 
@@ -166,7 +162,7 @@ class ClinicalSessionCreateView(APIView):
             )
 
         # Optional: normalize
-        session_id = session_id.upper()
+        # session_id = session_id.upper()
 
         # Django does NOT generate the ID.
         # It only checks whether Spring's ID already exists.

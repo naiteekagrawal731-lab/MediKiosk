@@ -6,7 +6,6 @@ from .views import (
     StartSession,
     QuestionAnswerView,
     QuestionsComplete,
-    Getsession,
     
     HistoryAnswerListView,
 
@@ -31,7 +30,6 @@ urlpatterns = [
     # SESSION
     # ========================================================
     
-    path("patient/clinicalsession",Getsession.as_view(),name="get-session-id"),
 
     path(
         "session/",

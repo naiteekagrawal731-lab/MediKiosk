@@ -13,7 +13,7 @@ export const TreatmentPage = () => {
   const { sessionId } = useParams();
   const navigate = useNavigate();
   const { sessionData, updateSession } = useSession();
-  const { speak } = useSpeechSynthesis();
+  const { speak, cancel } = useSpeechSynthesis();
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
 

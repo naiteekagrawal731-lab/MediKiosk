@@ -13,6 +13,7 @@ import { TreatmentPage } from './pages/TreatmentPage';
 import { InterviewPage } from './pages/InterviewPage';
 import { ThankYouPage } from './pages/ThankYouPage';
 import { RedFlagPage } from './pages/RedFlagPage';
+import { PatientAccountPage } from './pages/PatientAccountPage';
 import { PatientDashboardPage } from './pages/PatientDashboardPage';
 import { NotFoundPage } from './pages/NotFoundPage';
 
@@ -42,6 +43,8 @@ function App() {
             <Route path="/session/:sessionId/red-flag" element={<RedFlagPage />} />
 
             {/* Patient Portal */}
+            <Route path="/patient/account" element={<PatientAccountPage />} />
+            <Route path="/patient/login" element={<PatientAccountPage />} />
             <Route
               path="/patient/dashboard"
               element={

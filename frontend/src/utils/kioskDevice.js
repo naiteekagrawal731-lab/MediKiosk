@@ -2,7 +2,6 @@ const KIOSK_REG_NUM_KEY = 'medikiosk_hospital_registration_number';
 
 export const getHospitalRegistrationNumber = () => {
   try {
-    console.log("start")
     return localStorage.getItem(KIOSK_REG_NUM_KEY) || null;
   } catch (error) {
     console.error('Error reading hospital registration number:', error);

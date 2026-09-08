@@ -165,9 +165,22 @@ export const PatientDashboardPage = () => {
               </div>
 
               <div>
-                <div style={{ fontSize: '0.8rem', fontWeight: 600, color: '#64748b', textTransform: 'uppercase' }}>Date of Birth</div>
+                <div style={{ fontSize: '0.8rem', fontWeight: 600, color: '#64748b', textTransform: 'uppercase' }}>Date of Birth / Age</div>
                 <div style={{ fontSize: '1.05rem', fontWeight: 700, color: '#0f172a', marginTop: '0.2rem' }}>
-                  {profileData.dateOfBirth || profileData.dob || '—'}
+                  {profileData.dateOfBirth || profileData.dob ? (
+                    <>
+                      {profileData.dateOfBirth || profileData.dob}
+                      {(() => {
+                        const dobStr = profileData.dateOfBirth || profileData.dob;
+                        const dob = new Date(dobStr);
+                        if (!isNaN(dob)) {
+                          const age = Math.floor((new Date() - dob) / (365.25 * 24 * 60 * 60 * 1000));
+                          return ` (${age} yrs)`;
+                        }
+                        return '';
+                      })()}
+                    </>
+                  ) : '—'}
                 </div>
               </div>
 

@@ -35,6 +35,27 @@ export const KioskHeader = () => {
       <div className="kiosk-header-right">
         <button
           type="button"
+          onClick={() => navigate('/patient/account')}
+          style={{
+            background: '#ffffff',
+            border: '2px solid #e2e8f0',
+            borderRadius: '999px',
+            padding: '0.35rem 0.85rem',
+            fontSize: '0.9rem',
+            fontWeight: 700,
+            color: '#0284c7',
+            cursor: 'pointer',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '0.35rem'
+          }}
+          title="Patient Account Portal"
+        >
+          <span>👤</span> Patient Account
+        </button>
+
+        <button
+          type="button"
           onClick={() => navigate('/staff')}
           style={{
             background: '#ffffff',

@@ -9,8 +9,6 @@ export const WelcomePage = () => {
 
   const handleStart = () => {
     // Clear any previous session state before starting a new consultation.
-    // Do NOT call /patient/clinicalsession here — the sessionId is obtained
-    // after the patient's guest/login choice on the RegisterPage.
     clearSession();
     navigate('/session/new/language');
   };
@@ -64,8 +62,8 @@ export const WelcomePage = () => {
           </div>
         </div>
 
-        {/* Action Button */}
-        <div className="welcome-action-area" style={{ width: '100%' }}>
+        {/* Action Buttons */}
+        <div className="welcome-action-area" style={{ width: '100%', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
           <button
             type="button"
             id="start-consultation-btn"
@@ -74,6 +72,29 @@ export const WelcomePage = () => {
             style={{ fontSize: '1.6rem', padding: '1.25rem' }}
           >
             Start Consultation →
+          </button>
+
+          <button
+            type="button"
+            onClick={() => navigate('/patient/account')}
+            style={{
+              width: '100%',
+              padding: '1.1rem',
+              fontSize: '1.25rem',
+              fontWeight: 700,
+              color: '#0284c7',
+              backgroundColor: '#f0f9ff',
+              border: '2px solid #bae6fd',
+              borderRadius: '16px',
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: '0.6rem',
+              transition: 'all 0.2s ease',
+            }}
+          >
+            <span>👤</span> Patient Account (Login / Create Account)
           </button>
         </div>
       </div>

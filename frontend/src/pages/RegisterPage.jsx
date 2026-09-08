@@ -8,7 +8,7 @@ import { useAuth } from '../context/AuthContext';
 import { translations } from '../utils/translations';
 import { useSpeechSynthesis } from '../hooks/useSpeechSynthesis';
 import { SpeakerButton } from '../components/SpeakerButton';
-import { registerGuestPatient, loginPatient, createPatientAccount, createSession } from '../services/springApi';
+import { registerGuestPatient, loginPatient, createSession } from '../services/springApi';
 import { createDjangoSession } from '../services/djangoApi';
 
 export const RegisterPage = () => {
@@ -18,7 +18,7 @@ export const RegisterPage = () => {
   const { loginUser } = useAuth();
   const { speak, cancel } = useSpeechSynthesis();
   
-  // 'choice' | 'guest' | 'login' | 'create_account'
+  // 'choice' | 'guest' | 'login'
   const [view, setView] = useState('choice');
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
@@ -47,16 +47,6 @@ export const RegisterPage = () => {
     password: '',
   });
 
-  // Create Patient Account Form Data
-  const [createForm, setCreateForm] = useState({
-    username: '',
-    password: '',
-    gender: '',
-    dateOfBirth: '',
-    bloodGroup: '',
-    phoneNumber: '',
-  });
-
   const lang = sessionData.language || 'EN';
   const t = translations[lang] || translations['EN'];
 
@@ -71,8 +61,6 @@ export const RegisterPage = () => {
       speak(t.guest || 'Please enter your guest registration details.', lang, { volume: customVol, isMuted: customMuted });
     } else if (view === 'login') {
       speak('Please enter your username and password to log in.', lang, { volume: customVol, isMuted: customMuted });
-    } else if (view === 'create_account') {
-      speak('Create a new patient account to save your health records.', lang, { volume: customVol, isMuted: customMuted });
     }
   };
 
@@ -104,9 +92,6 @@ export const RegisterPage = () => {
   };
 
   // 1. SUBMIT GUEST REGISTRATION
-  // POST /guest/login → response provides sessionId
-  // Then initialize Django clinical session with that sessionId.
-  // Do NOT call /patient/clinicalsession in the guest flow.
   const handleGuestSubmit = async (e) => {
     e.preventDefault();
     setErrorMsg('');
@@ -130,14 +115,12 @@ export const RegisterPage = () => {
 
     setLoading(true);
     try {
-      // /guest/login returns the sessionId in its response body
       const result = await registerGuestPatient(guestForm);
       const newSessionId = result.sessionId || result.session_id;
       if (!newSessionId) {
         throw new Error('Session ID not returned by the server. Please try again.');
       }
 
-      // Initialize the Django clinical session with the Spring-provided sessionId
       await createDjangoSession(newSessionId);
 
       updateSession({
@@ -154,8 +137,6 @@ export const RegisterPage = () => {
   };
 
   // 2. SUBMIT EXISTING PATIENT LOGIN
-  // POST /patient/login → then POST /patient/clinicalsession → sessionId
-  // Then initialize Django clinical session with that sessionId.
   const handleLoginSubmit = async (e) => {
     e.preventDefault();
     setErrorMsg('');
@@ -171,7 +152,6 @@ export const RegisterPage = () => {
 
     setLoading(true);
     try {
-      // Step 1: Authenticate the patient
       const res = await loginPatient(loginForm);
       loginUser({
         role: 'PATIENT',
@@ -180,10 +160,8 @@ export const RegisterPage = () => {
         profile: res.profile,
       });
 
-      // Step 2: Create clinical session via /patient/clinicalsession
       const { session_id: newSessionId } = await createSession();
 
-      // Step 3: Initialize Django clinical session with the Spring-provided sessionId
       await createDjangoSession(newSessionId);
 
       updateSession({
@@ -194,64 +172,6 @@ export const RegisterPage = () => {
     } catch (err) {
       console.error('Patient login error:', err);
       setErrorMsg(err.message || 'Login failed. Please check username and password.');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // 3. SUBMIT CREATE PATIENT ACCOUNT
-  // POST /patient/create → then POST /patient/clinicalsession → sessionId
-  // Then initialize Django clinical session with that sessionId.
-  const handleCreateSubmit = async (e) => {
-    e.preventDefault();
-    setErrorMsg('');
-
-    if (!createForm.username.trim()) {
-      setErrorMsg('Username is required.');
-      return;
-    }
-    if (!createForm.password.trim()) {
-      setErrorMsg('Password is required.');
-      return;
-    }
-    if (!createForm.gender) {
-      setErrorMsg('Please select your gender.');
-      return;
-    }
-    if (!createForm.dateOfBirth) {
-      setErrorMsg('Date of birth is required.');
-      return;
-    }
-    if (!createForm.phoneNumber.trim()) {
-      setErrorMsg('Phone number is required.');
-      return;
-    }
-
-    setLoading(true);
-    try {
-      // Step 1: Create the patient account
-      const res = await createPatientAccount(createForm);
-      loginUser({
-        role: 'PATIENT',
-        username: createForm.username.trim(),
-        accessToken: res.accessToken,
-        profile: res.user,
-      });
-
-      // Step 2: Create clinical session via /patient/clinicalsession
-      const { session_id: newSessionId } = await createSession();
-
-      // Step 3: Initialize Django clinical session with the Spring-provided sessionId
-      await createDjangoSession(newSessionId);
-
-      updateSession({
-        patientRegistration: { type: 'patient', username: createForm.username.trim() },
-        sessionId: newSessionId,
-      });
-      navigate(`/session/${newSessionId}/treatment`);
-    } catch (err) {
-      console.error('Create patient account error:', err);
-      setErrorMsg(err.message || 'Account creation failed. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -458,136 +378,6 @@ export const RegisterPage = () => {
     );
   }
 
-  // VIEW 3: CREATE PATIENT ACCOUNT FORM
-  if (view === 'create_account') {
-    return (
-      <PageContainer>
-        <div className="interview-main-card">
-          <div className="interview-header-info">
-            <h2 className="interview-session-id">
-              Session ID: <span className="session-id-val">{sessionId ? sessionId.toUpperCase() : ''}</span>
-            </h2>
-            <ProgressIndicator step={3} total={4} />
-          </div>
-
-          <div className="interview-body-content" style={{ width: '100%' }}>
-            <div className="kiosk-question-header-row">
-              <SpeakerButton onClick={() => playSpeech()} />
-              <h1 className="kiosk-question-text" style={{ fontSize: '1.8rem' }}>
-                Create Patient Account
-              </h1>
-            </div>
-
-            <form onSubmit={handleCreateSubmit} className="kiosk-registration-form">
-              <div className="form-grid-2col">
-                <div className="kiosk-field-group">
-                  <label className="kiosk-field-label">Username *</label>
-                  <input 
-                    type="text"
-                    required
-                    placeholder="Choose a username"
-                    value={createForm.username}
-                    onChange={(e) => setCreateForm({ ...createForm, username: e.target.value })}
-                    className="kiosk-form-input"
-                  />
-                </div>
-
-                <div className="kiosk-field-group">
-                  <label className="kiosk-field-label">Password *</label>
-                  <input 
-                    type="password"
-                    required
-                    placeholder="Choose a password"
-                    value={createForm.password}
-                    onChange={(e) => setCreateForm({ ...createForm, password: e.target.value })}
-                    className="kiosk-form-input"
-                  />
-                </div>
-
-                <div className="kiosk-field-group col-span-2">
-                  <label className="kiosk-field-label">Gender *</label>
-                  <div className="gender-selector-grid">
-                    {['Male', 'Female', 'Other'].map((g) => (
-                      <button 
-                        key={g}
-                        type="button"
-                        onClick={() => setCreateForm({ ...createForm, gender: g })}
-                        className={`gender-btn ${createForm.gender === g ? 'active' : ''}`}
-                      >
-                        <span>{g === 'Male' ? '👨' : g === 'Female' ? '👩' : '🧑'}</span>
-                        <span>{g}</span>
-                      </button>
-                    ))}
-                  </div>
-                </div>
-
-                <div className="kiosk-field-group">
-                  <label className="kiosk-field-label">Date of Birth *</label>
-                  <input 
-                    type="date"
-                    required
-                    value={createForm.dateOfBirth}
-                    onChange={(e) => setCreateForm({ ...createForm, dateOfBirth: e.target.value })}
-                    className="kiosk-form-input"
-                  />
-                </div>
-
-                <div className="kiosk-field-group">
-                  <label className="kiosk-field-label">Phone Number *</label>
-                  <input 
-                    type="tel"
-                    required
-                    placeholder="10-digit mobile number"
-                    value={createForm.phoneNumber}
-                    onChange={(e) => setCreateForm({ ...createForm, phoneNumber: e.target.value })}
-                    className="kiosk-form-input"
-                  />
-                </div>
-
-                <div className="kiosk-field-group col-span-2">
-                  <label className="kiosk-field-label">Blood Group (Optional)</label>
-                  <select 
-                    value={createForm.bloodGroup}
-                    onChange={(e) => setCreateForm({ ...createForm, bloodGroup: e.target.value })}
-                    className="kiosk-form-select"
-                  >
-                    <option value="">Select Blood Group...</option>
-                    {['A+', 'A-', 'B+', 'B-', 'O+', 'O-', 'AB+', 'AB-'].map((bg) => (
-                      <option key={bg} value={bg}>{bg}</option>
-                    ))}
-                  </select>
-                </div>
-              </div>
-
-              {errorMsg && (
-                <div className="interview-error-msg" style={{ marginTop: '1rem' }}>
-                  ⚠️ {errorMsg}
-                </div>
-              )}
-
-              <div className="kiosk-button-row-duo" style={{ marginTop: '2rem' }}>
-                <button 
-                  type="button" 
-                  onClick={() => setView('choice')} 
-                  className="kiosk-secondary-action-btn"
-                >
-                  {t.backBtn || '← Back'}
-                </button>
-                <button 
-                  type="submit" 
-                  disabled={loading} 
-                  className="kiosk-submit-btn"
-                >
-                  {loading ? 'Creating Account...' : 'Create & Continue →'}
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      </PageContainer>
-    );
-  }
-
   // CHOICE VIEW (DEFAULT)
   return (
     <PageContainer>
@@ -633,15 +423,6 @@ export const RegisterPage = () => {
               style={{ padding: '1.25rem', fontSize: '1.35rem' }}
             >
               📝 Continue as Guest
-            </button>
-
-            <button 
-              type="button"
-              onClick={() => handleChoice('create_account')} 
-              className="kiosk-option-card"
-              style={{ padding: '1.25rem', fontSize: '1.35rem' }}
-            >
-              ✨ Create Patient Account
             </button>
           </div>
 
