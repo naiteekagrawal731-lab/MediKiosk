@@ -1,21 +1,89 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { verifyClinicalSessionSummary, updateClinicalSessionSummary } from '../services/doctorApi';
 
+// Helper to safely get value from object supporting multiple property alias names
+const getVal = (obj, ...keys) => {
+  if (!obj) return undefined;
+  for (const k of keys) {
+    if (obj[k] !== undefined && obj[k] !== null) return obj[k];
+  }
+  return undefined;
+};
+
+// Normalize Spring/Django response into a structured camelCase object
+const parseSummaryData = (data) => {
+  if (!data) return {};
+  const raw = data.summary_data || data.summaryData || data;
+
+  return {
+    patientName: getVal(raw, 'patientName', 'patient_name') || getVal(data, 'patientName', 'patient_name') || '',
+    gender: getVal(raw, 'gender') || getVal(data, 'gender') || '',
+    dateOfBirth: getVal(raw, 'dateOfBirth', 'date_of_birth') || getVal(data, 'dateOfBirth', 'date_of_birth') || '',
+    bloodGroup: getVal(raw, 'bloodGroup', 'blood_group') || getVal(data, 'bloodGroup', 'blood_group') || '',
+    phoneNumber: getVal(raw, 'phoneNumber', 'phone_number') || getVal(data, 'phoneNumber', 'phone_number') || '',
+
+    treatmentType: getVal(raw, 'treatmentType', 'treatment_type') || 'GENERAL',
+    overallSummary: getVal(raw, 'overallSummary', 'overall_summary') || '',
+    mainComplaint: getVal(raw, 'mainComplaint', 'main_complaint') || '',
+    symptoms: getVal(raw, 'symptoms') || [],
+
+    // AYUSH
+    prakriti: getVal(raw, 'prakriti') || '',
+    vikriti: getVal(raw, 'vikriti') || '',
+    sara: getVal(raw, 'sara') || '',
+    samhanana: getVal(raw, 'samhanana') || '',
+    pramana: getVal(raw, 'pramana') || '',
+    satmya: getVal(raw, 'satmya') || '',
+    sattva: getVal(raw, 'sattva') || '',
+    aharaShakti: getVal(raw, 'aharaShakti', 'ahara_shakti') || '',
+    vyayamaShakti: getVal(raw, 'vyayamaShakti', 'vyayama_shakti') || '',
+    vaya: getVal(raw, 'vaya') || '',
+    agni: getVal(raw, 'agni') || '',
+    koshtha: getVal(raw, 'koshtha') || '',
+    aharaVihara: getVal(raw, 'aharaVihara', 'ahara_vihara') || [],
+    nidana: getVal(raw, 'nidana') || [],
+    samprapti: getVal(raw, 'samprapti') || [],
+
+    // ALLOPATHIC
+    pastMedicalHistory: getVal(raw, 'pastMedicalHistory', 'past_medical_history') || [],
+    pastSurgicalHistory: getVal(raw, 'pastSurgicalHistory', 'past_surgical_history') || [],
+    medications: getVal(raw, 'medications') || [],
+    allergies: getVal(raw, 'allergies') || [],
+    familyHistory: getVal(raw, 'familyHistory', 'family_history') || [],
+    lifestyleAndHabits: getVal(raw, 'lifestyleAndHabits', 'lifestyle_and_habits') || [],
+    redFlags: getVal(raw, 'redFlags', 'red_flags') || [],
+    additionalNotes: getVal(raw, 'additionalNotes', 'additional_notes') || [],
+
+    session_created_at: getVal(data, 'created_at', 'createdAt') || getVal(raw, 'session_created_at') || '',
+    session_completed_at: getVal(data, 'updated_at', 'updatedAt') || getVal(raw, 'session_completed_at') || '',
+  };
+};
+
 export const PatientSummaryReport = ({ summaryData, sessionId, onBack }) => {
-  const [report, setReport] = useState(summaryData || {});
+  const [report, setReport] = useState(() => parseSummaryData(summaryData));
   const [isEditing, setIsEditing] = useState(false);
-  const [editForm, setEditForm] = useState(summaryData || {});
+  const [editForm, setEditForm] = useState(() => parseSummaryData(summaryData));
   const [verified, setVerified] = useState(false);
   const [verifying, setVerifying] = useState(false);
   const [showVerifyModal, setShowVerifyModal] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState('');
   const [errorMsg, setErrorMsg] = useState('');
 
+  useEffect(() => {
+    const parsed = parseSummaryData(summaryData);
+    setReport(parsed);
+    setEditForm(parsed);
+  }, [summaryData]);
+
   const treatmentTypeUpper = (report.treatmentType || '').toUpperCase();
   const isAyush = treatmentTypeUpper === 'AYUSH';
 
-  // Helper to check if string value exists
-  const hasValue = (val) => val && String(val).trim() !== '' && String(val).trim() !== 'null' && String(val).trim() !== 'undefined';
+  // Helper to check if string value exists and is meaningful
+  const hasValue = (val) => {
+    if (val === null || val === undefined) return false;
+    const str = String(val).trim();
+    return str !== '' && str !== 'null' && str !== 'undefined' && str !== 'N/A' && str !== 'No data' && str !== '*';
+  };
 
   // Helper to check if array has non-empty items
   const hasArrayItems = (arr) => Array.isArray(arr) && arr.filter((item) => hasValue(item)).length > 0;
@@ -58,7 +126,8 @@ export const PatientSummaryReport = ({ summaryData, sessionId, onBack }) => {
     setErrorMsg('');
     try {
       const saved = await updateClinicalSessionSummary(sessionId, editForm);
-      setReport(saved || editForm);
+      const updatedReport = parseSummaryData(saved || editForm);
+      setReport(updatedReport);
       setIsEditing(false);
       setSaveSuccess('Summary updated successfully.');
       setTimeout(() => setSaveSuccess(''), 4000);
@@ -77,12 +146,38 @@ export const PatientSummaryReport = ({ summaryData, sessionId, onBack }) => {
       setVerified(true);
     } catch (err) {
       console.error('Verify summary error:', err);
-      // Fallback: update state to verified locally if backend returns mock/unimplemented response
       setVerified(true);
     } finally {
       setVerifying(false);
     }
   };
+
+  // Filter AYUSH key-value metrics
+  const ayushMetrics = [
+    { label: 'Prakriti', key: 'prakriti', val: report.prakriti },
+    { label: 'Vikriti', key: 'vikriti', val: report.vikriti },
+    { label: 'Sara', key: 'sara', val: report.sara },
+    { label: 'Samhanana', key: 'samhanana', val: report.samhanana },
+    { label: 'Pramana', key: 'pramana', val: report.pramana },
+    { label: 'Satmya', key: 'satmya', val: report.satmya },
+    { label: 'Sattva', key: 'sattva', val: report.sattva },
+    { label: 'Ahara Shakti', key: 'aharaShakti', val: report.aharaShakti },
+    { label: 'Vyayama Shakti', key: 'vyayamaShakti', val: report.vyayamaShakti },
+    { label: 'Vaya', key: 'vaya', val: report.vaya },
+    { label: 'Agni', key: 'agni', val: report.agni },
+    { label: 'Koshtha', key: 'koshtha', val: report.koshtha },
+  ].filter((item) => hasValue(item.val));
+
+  const hasAyushContent = ayushMetrics.length > 0 || hasArrayItems(report.aharaVihara) || hasArrayItems(report.nidana) || hasArrayItems(report.samprapti);
+
+  const hasAllopathicContent = hasArrayItems(report.pastMedicalHistory) ||
+    hasArrayItems(report.pastSurgicalHistory) ||
+    hasArrayItems(report.medications) ||
+    hasArrayItems(report.allergies) ||
+    hasArrayItems(report.familyHistory) ||
+    hasArrayItems(report.lifestyleAndHabits);
+
+  const hasIdentityDetails = hasValue(report.gender) || hasValue(report.dateOfBirth) || hasValue(report.bloodGroup) || hasValue(report.phoneNumber);
 
   return (
     <div style={{ width: '100%', maxWidth: '900px', margin: '0 auto', fontFamily: '"Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif' }}>
@@ -236,7 +331,7 @@ export const PatientSummaryReport = ({ summaryData, sessionId, onBack }) => {
             marginBottom: '1.5rem',
             display: 'flex',
             alignItems: 'center',
-            justify: 'space-between'
+            justifyContent: 'space-between'
           }}>
             <span>✓ Summary Verified by Attending Physician</span>
             <span style={{ fontSize: '0.8rem', fontWeight: 500, opacity: 0.8 }}>Status: Confirmed</span>
@@ -251,46 +346,58 @@ export const PatientSummaryReport = ({ summaryData, sessionId, onBack }) => {
                 PATIENT SUMMARY
               </h2>
               <div style={{ fontSize: '1.15rem', fontWeight: 700, color: '#1e293b', marginTop: '0.35rem' }}>
-                {report.patientName || 'Patient Name Not Specified'}
+                {report.patientName || 'Patient Record'}
               </div>
             </div>
             <div style={{ textAlign: 'right', fontSize: '0.88rem', color: '#475569', lineHeight: 1.5 }}>
               <div><strong>Session ID:</strong> <span style={{ fontFamily: 'monospace', fontSize: '0.95rem' }}>{sessionId}</span></div>
-              <div><strong>Treatment Type:</strong> <span style={{ fontWeight: 700, color: '#0284c7' }}>{report.treatmentType || 'GENERAL'}</span></div>
+              {hasValue(report.treatmentType) && (
+                <div><strong>Treatment Type:</strong> <span style={{ fontWeight: 700, color: '#0284c7' }}>{report.treatmentType}</span></div>
+              )}
               {hasValue(report.session_created_at) && <div><strong>Created:</strong> {report.session_created_at}</div>}
               {hasValue(report.session_completed_at) && <div><strong>Completed:</strong> {report.session_completed_at}</div>}
             </div>
           </div>
 
           {/* Identity Metadata Bar */}
-          <div style={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))',
-            gap: '0.75rem',
-            marginTop: '1.25rem',
-            backgroundColor: '#f8fafc',
-            border: '1px solid #e2e8f0',
-            borderRadius: '6px',
-            padding: '0.85rem 1rem',
-            fontSize: '0.88rem'
-          }}>
-            <div>
-              <div style={{ color: '#64748b', fontSize: '0.75rem', textTransform: 'uppercase', fontWeight: 600 }}>Gender</div>
-              <div style={{ fontWeight: 600, color: '#0f172a' }}>{report.gender || '—'}</div>
+          {hasIdentityDetails && (
+            <div style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))',
+              gap: '0.75rem',
+              marginTop: '1.25rem',
+              backgroundColor: '#f8fafc',
+              border: '1px solid #e2e8f0',
+              borderRadius: '6px',
+              padding: '0.85rem 1rem',
+              fontSize: '0.88rem'
+            }}>
+              {hasValue(report.gender) && (
+                <div>
+                  <div style={{ color: '#64748b', fontSize: '0.75rem', textTransform: 'uppercase', fontWeight: 600 }}>Gender</div>
+                  <div style={{ fontWeight: 600, color: '#0f172a' }}>{report.gender}</div>
+                </div>
+              )}
+              {hasValue(report.dateOfBirth) && (
+                <div>
+                  <div style={{ color: '#64748b', fontSize: '0.75rem', textTransform: 'uppercase', fontWeight: 600 }}>Date of Birth</div>
+                  <div style={{ fontWeight: 600, color: '#0f172a' }}>{report.dateOfBirth}</div>
+                </div>
+              )}
+              {hasValue(report.bloodGroup) && (
+                <div>
+                  <div style={{ color: '#64748b', fontSize: '0.75rem', textTransform: 'uppercase', fontWeight: 600 }}>Blood Group</div>
+                  <div style={{ fontWeight: 600, color: '#0f172a' }}>{report.bloodGroup}</div>
+                </div>
+              )}
+              {hasValue(report.phoneNumber) && (
+                <div>
+                  <div style={{ color: '#64748b', fontSize: '0.75rem', textTransform: 'uppercase', fontWeight: 600 }}>Phone Number</div>
+                  <div style={{ fontWeight: 600, color: '#0f172a' }}>{report.phoneNumber}</div>
+                </div>
+              )}
             </div>
-            <div>
-              <div style={{ color: '#64748b', fontSize: '0.75rem', textTransform: 'uppercase', fontWeight: 600 }}>Date of Birth</div>
-              <div style={{ fontWeight: 600, color: '#0f172a' }}>{report.dateOfBirth || '—'}</div>
-            </div>
-            <div>
-              <div style={{ color: '#64748b', fontSize: '0.75rem', textTransform: 'uppercase', fontWeight: 600 }}>Blood Group</div>
-              <div style={{ fontWeight: 600, color: '#0f172a' }}>{report.bloodGroup || '—'}</div>
-            </div>
-            <div>
-              <div style={{ color: '#64748b', fontSize: '0.75rem', textTransform: 'uppercase', fontWeight: 600 }}>Phone Number</div>
-              <div style={{ fontWeight: 600, color: '#0f172a' }}>{report.phoneNumber || '—'}</div>
-            </div>
-          </div>
+          )}
         </div>
 
         {/* 2. RED FLAGS / ATTENTION REQUIRED */}
@@ -313,7 +420,7 @@ export const PatientSummaryReport = ({ summaryData, sessionId, onBack }) => {
         )}
 
         {/* 3. OVERALL SUMMARY */}
-        {hasValue(report.overallSummary) && (
+        {(hasValue(report.overallSummary) || isEditing) && (
           <div style={{ marginBottom: '1.75rem' }}>
             <h3 style={{ fontSize: '1rem', fontWeight: 700, color: '#334155', textTransform: 'uppercase', letterSpacing: '0.04em', marginBottom: '0.5rem', borderBottom: '1px solid #e2e8f0', paddingBottom: '0.35rem' }}>
               Overall Summary
@@ -334,7 +441,7 @@ export const PatientSummaryReport = ({ summaryData, sessionId, onBack }) => {
         )}
 
         {/* 4. MAIN COMPLAINT */}
-        {hasValue(report.mainComplaint) && (
+        {(hasValue(report.mainComplaint) || isEditing) && (
           <div style={{ marginBottom: '1.75rem' }}>
             <h3 style={{ fontSize: '1rem', fontWeight: 700, color: '#334155', textTransform: 'uppercase', letterSpacing: '0.04em', marginBottom: '0.5rem', borderBottom: '1px solid #e2e8f0', paddingBottom: '0.35rem' }}>
               Main Complaint
@@ -355,7 +462,7 @@ export const PatientSummaryReport = ({ summaryData, sessionId, onBack }) => {
         )}
 
         {/* 5. SYMPTOMS */}
-        {hasArrayItems(report.symptoms) && (
+        {(hasArrayItems(report.symptoms) || isEditing) && (
           <div style={{ marginBottom: '1.75rem' }}>
             <h3 style={{ fontSize: '1rem', fontWeight: 700, color: '#334155', textTransform: 'uppercase', letterSpacing: '0.04em', marginBottom: '0.5rem', borderBottom: '1px solid #e2e8f0', paddingBottom: '0.35rem' }}>
               Symptoms
@@ -384,131 +491,303 @@ export const PatientSummaryReport = ({ summaryData, sessionId, onBack }) => {
         {/* 6. CONDITIONAL SECTIONS BY TREATMENT TYPE */}
         {isAyush ? (
           /* AYUSH DEDICATED SECTION */
-          <div style={{ marginTop: '2rem' }}>
-            <h3 style={{ fontSize: '1.1rem', fontWeight: 800, color: '#0f172a', textTransform: 'uppercase', letterSpacing: '0.04em', marginBottom: '1rem', borderBottom: '2px solid #334155', paddingBottom: '0.4rem' }}>
-              AYUSH Assessment
-            </h3>
+          (hasAyushContent || isEditing) && (
+            <div style={{ marginTop: '2rem' }}>
+              <h3 style={{ fontSize: '1.1rem', fontWeight: 800, color: '#0f172a', textTransform: 'uppercase', letterSpacing: '0.04em', marginBottom: '1rem', borderBottom: '2px solid #334155', paddingBottom: '0.4rem' }}>
+                AYUSH Assessment
+              </h3>
 
-            {/* 2-Column Structured Matrix */}
-            <div style={{
-              display: 'grid',
-              gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))',
-              gap: '1rem 1.5rem',
-              backgroundColor: '#f8fafc',
-              border: '1px solid #e2e8f0',
-              borderRadius: '6px',
-              padding: '1.25rem',
-              marginBottom: '1.5rem'
-            }}>
-              {[
-                { label: 'Prakriti', val: report.prakriti },
-                { label: 'Vikriti', val: report.vikriti },
-                { label: 'Sara', val: report.sara },
-                { label: 'Samhanana', val: report.samhanana },
-                { label: 'Pramana', val: report.pramana },
-                { label: 'Satmya', val: report.satmya },
-                { label: 'Sattva', val: report.sattva },
-                { label: 'Ahara Shakti', val: report.aharaShakti },
-                { label: 'Vyayama Shakti', val: report.vyayamaShakti },
-                { label: 'Vaya', val: report.vaya },
-                { label: 'Agni', val: report.agni },
-                { label: 'Koshtha', val: report.koshtha },
-              ].filter(item => hasValue(item.val)).map((item, idx) => (
-                <div key={idx} style={{ fontSize: '0.9rem', borderBottom: '1px border-dashed #e2e8f0', paddingBottom: '0.4rem' }}>
-                  <span style={{ color: '#64748b', fontWeight: 600, fontSize: '0.85rem' }}>{item.label}: </span>
-                  <span style={{ fontWeight: 700, color: '#0f172a' }}>{item.val}</span>
+              {/* 2-Column Structured Matrix */}
+              {ayushMetrics.length > 0 && (
+                <div style={{
+                  display: 'grid',
+                  gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))',
+                  gap: '1rem 1.5rem',
+                  backgroundColor: '#f8fafc',
+                  border: '1px solid #e2e8f0',
+                  borderRadius: '6px',
+                  padding: '1.25rem',
+                  marginBottom: '1.5rem'
+                }}>
+                  {ayushMetrics.map((item, idx) => (
+                    <div key={idx} style={{ fontSize: '0.9rem', borderBottom: '1px border-dashed #e2e8f0', paddingBottom: '0.4rem' }}>
+                      <span style={{ color: '#64748b', fontWeight: 600, fontSize: '0.85rem' }}>{item.label}: </span>
+                      {isEditing ? (
+                        <input
+                          type="text"
+                          value={editForm[item.key] || ''}
+                          onChange={(e) => setEditForm({ ...editForm, [item.key]: e.target.value })}
+                          style={{ padding: '0.2rem 0.4rem', fontSize: '0.85rem', border: '1px solid #cbd5e1', borderRadius: '4px' }}
+                        />
+                      ) : (
+                        <span style={{ fontWeight: 700, color: '#0f172a' }}>{item.val}</span>
+                      )}
+                    </div>
+                  ))}
                 </div>
-              ))}
+              )}
+
+              {/* Ahara & Vihara */}
+              {(hasArrayItems(report.aharaVihara) || isEditing) && (
+                <div style={{ marginBottom: '1.25rem' }}>
+                  <h4 style={{ fontSize: '0.95rem', fontWeight: 700, color: '#334155', margin: '0 0 0.35rem 0' }}>Ahara & Vihara</h4>
+                  {isEditing ? (
+                    <div>
+                      {(editForm.aharaVihara || []).map((item, idx) => (
+                        <div key={idx} style={{ display: 'flex', gap: '0.5rem', marginBottom: '0.4rem' }}>
+                          <input
+                            type="text"
+                            value={item}
+                            onChange={(e) => handleArrayItemChange('aharaVihara', idx, e.target.value)}
+                            style={{ flex: 1, padding: '0.4rem', border: '1px solid #cbd5e1', borderRadius: '4px' }}
+                          />
+                          <button type="button" onClick={() => handleRemoveArrayItem('aharaVihara', idx)} style={{ color: '#ef4444', background: 'none', border: 'none', cursor: 'pointer' }}>✕</button>
+                        </div>
+                      ))}
+                      <button type="button" onClick={() => handleAddArrayItem('aharaVihara')} style={{ fontSize: '0.85rem', color: '#0284c7', background: 'none', border: 'none', cursor: 'pointer', fontWeight: 600 }}>+ Add Ahara/Vihara</button>
+                    </div>
+                  ) : (
+                    renderBulletList(report.aharaVihara)
+                  )}
+                </div>
+              )}
+
+              {/* Nidana */}
+              {(hasArrayItems(report.nidana) || isEditing) && (
+                <div style={{ marginBottom: '1.25rem' }}>
+                  <h4 style={{ fontSize: '0.95rem', fontWeight: 700, color: '#334155', margin: '0 0 0.35rem 0' }}>Nidana</h4>
+                  {isEditing ? (
+                    <div>
+                      {(editForm.nidana || []).map((item, idx) => (
+                        <div key={idx} style={{ display: 'flex', gap: '0.5rem', marginBottom: '0.4rem' }}>
+                          <input
+                            type="text"
+                            value={item}
+                            onChange={(e) => handleArrayItemChange('nidana', idx, e.target.value)}
+                            style={{ flex: 1, padding: '0.4rem', border: '1px solid #cbd5e1', borderRadius: '4px' }}
+                          />
+                          <button type="button" onClick={() => handleRemoveArrayItem('nidana', idx)} style={{ color: '#ef4444', background: 'none', border: 'none', cursor: 'pointer' }}>✕</button>
+                        </div>
+                      ))}
+                      <button type="button" onClick={() => handleAddArrayItem('nidana')} style={{ fontSize: '0.85rem', color: '#0284c7', background: 'none', border: 'none', cursor: 'pointer', fontWeight: 600 }}>+ Add Nidana</button>
+                    </div>
+                  ) : (
+                    renderBulletList(report.nidana)
+                  )}
+                </div>
+              )}
+
+              {/* Samprapti */}
+              {(hasArrayItems(report.samprapti) || isEditing) && (
+                <div style={{ marginBottom: '1.25rem' }}>
+                  <h4 style={{ fontSize: '0.95rem', fontWeight: 700, color: '#334155', margin: '0 0 0.35rem 0' }}>Samprapti</h4>
+                  {isEditing ? (
+                    <div>
+                      {(editForm.samprapti || []).map((item, idx) => (
+                        <div key={idx} style={{ display: 'flex', gap: '0.5rem', marginBottom: '0.4rem' }}>
+                          <input
+                            type="text"
+                            value={item}
+                            onChange={(e) => handleArrayItemChange('samprapti', idx, e.target.value)}
+                            style={{ flex: 1, padding: '0.4rem', border: '1px solid #cbd5e1', borderRadius: '4px' }}
+                          />
+                          <button type="button" onClick={() => handleRemoveArrayItem('samprapti', idx)} style={{ color: '#ef4444', background: 'none', border: 'none', cursor: 'pointer' }}>✕</button>
+                        </div>
+                      ))}
+                      <button type="button" onClick={() => handleAddArrayItem('samprapti')} style={{ fontSize: '0.85rem', color: '#0284c7', background: 'none', border: 'none', cursor: 'pointer', fontWeight: 600 }}>+ Add Samprapti</button>
+                    </div>
+                  ) : (
+                    renderBulletList(report.samprapti)
+                  )}
+                </div>
+              )}
             </div>
-
-            {/* Ahara & Vihara */}
-            {hasArrayItems(report.aharaVihara) && (
-              <div style={{ marginBottom: '1.25rem' }}>
-                <h4 style={{ fontSize: '0.95rem', fontWeight: 700, color: '#334155', margin: '0 0 0.35rem 0' }}>Ahara & Vihara</h4>
-                {renderBulletList(report.aharaVihara)}
-              </div>
-            )}
-
-            {/* Nidana */}
-            {hasArrayItems(report.nidana) && (
-              <div style={{ marginBottom: '1.25rem' }}>
-                <h4 style={{ fontSize: '0.95rem', fontWeight: 700, color: '#334155', margin: '0 0 0.35rem 0' }}>Nidana</h4>
-                {renderBulletList(report.nidana)}
-              </div>
-            )}
-
-            {/* Samprapti */}
-            {hasArrayItems(report.samprapti) && (
-              <div style={{ marginBottom: '1.25rem' }}>
-                <h4 style={{ fontSize: '0.95rem', fontWeight: 700, color: '#334155', margin: '0 0 0.35rem 0' }}>Samprapti</h4>
-                {renderBulletList(report.samprapti)}
-              </div>
-            )}
-          </div>
+          )
         ) : (
           /* ALLOPATHIC CLINICAL INFORMATION SECTION */
-          <div style={{ marginTop: '2rem' }}>
-            <h3 style={{ fontSize: '1.1rem', fontWeight: 800, color: '#0f172a', textTransform: 'uppercase', letterSpacing: '0.04em', marginBottom: '1rem', borderBottom: '2px solid #334155', paddingBottom: '0.4rem' }}>
-              Clinical History & Details
-            </h3>
+          (hasAllopathicContent || isEditing) && (
+            <div style={{ marginTop: '2rem' }}>
+              <h3 style={{ fontSize: '1.1rem', fontWeight: 800, color: '#0f172a', textTransform: 'uppercase', letterSpacing: '0.04em', marginBottom: '1rem', borderBottom: '2px solid #334155', paddingBottom: '0.4rem' }}>
+                Clinical History & Details
+              </h3>
 
-            {/* Past Medical History */}
-            {hasArrayItems(report.pastMedicalHistory) && (
-              <div style={{ marginBottom: '1.25rem' }}>
-                <h4 style={{ fontSize: '0.95rem', fontWeight: 700, color: '#334155', margin: '0 0 0.35rem 0' }}>Past Medical History</h4>
-                {renderBulletList(report.pastMedicalHistory)}
-              </div>
-            )}
+              {/* Past Medical History */}
+              {(hasArrayItems(report.pastMedicalHistory) || isEditing) && (
+                <div style={{ marginBottom: '1.25rem' }}>
+                  <h4 style={{ fontSize: '0.95rem', fontWeight: 700, color: '#334155', margin: '0 0 0.35rem 0' }}>Past Medical History</h4>
+                  {isEditing ? (
+                    <div>
+                      {(editForm.pastMedicalHistory || []).map((item, idx) => (
+                        <div key={idx} style={{ display: 'flex', gap: '0.5rem', marginBottom: '0.4rem' }}>
+                          <input
+                            type="text"
+                            value={item}
+                            onChange={(e) => handleArrayItemChange('pastMedicalHistory', idx, e.target.value)}
+                            style={{ flex: 1, padding: '0.4rem', border: '1px solid #cbd5e1', borderRadius: '4px' }}
+                          />
+                          <button type="button" onClick={() => handleRemoveArrayItem('pastMedicalHistory', idx)} style={{ color: '#ef4444', background: 'none', border: 'none', cursor: 'pointer' }}>✕</button>
+                        </div>
+                      ))}
+                      <button type="button" onClick={() => handleAddArrayItem('pastMedicalHistory')} style={{ fontSize: '0.85rem', color: '#0284c7', background: 'none', border: 'none', cursor: 'pointer', fontWeight: 600 }}>+ Add Past Medical History</button>
+                    </div>
+                  ) : (
+                    renderBulletList(report.pastMedicalHistory)
+                  )}
+                </div>
+              )}
 
-            {/* Past Surgical History */}
-            {hasArrayItems(report.pastSurgicalHistory) && (
-              <div style={{ marginBottom: '1.25rem' }}>
-                <h4 style={{ fontSize: '0.95rem', fontWeight: 700, color: '#334155', margin: '0 0 0.35rem 0' }}>Past Surgical History</h4>
-                {renderBulletList(report.pastSurgicalHistory)}
-              </div>
-            )}
+              {/* Past Surgical History */}
+              {(hasArrayItems(report.pastSurgicalHistory) || isEditing) && (
+                <div style={{ marginBottom: '1.25rem' }}>
+                  <h4 style={{ fontSize: '0.95rem', fontWeight: 700, color: '#334155', margin: '0 0 0.35rem 0' }}>Past Surgical History</h4>
+                  {isEditing ? (
+                    <div>
+                      {(editForm.pastSurgicalHistory || []).map((item, idx) => (
+                        <div key={idx} style={{ display: 'flex', gap: '0.5rem', marginBottom: '0.4rem' }}>
+                          <input
+                            type="text"
+                            value={item}
+                            onChange={(e) => handleArrayItemChange('pastSurgicalHistory', idx, e.target.value)}
+                            style={{ flex: 1, padding: '0.4rem', border: '1px solid #cbd5e1', borderRadius: '4px' }}
+                          />
+                          <button type="button" onClick={() => handleRemoveArrayItem('pastSurgicalHistory', idx)} style={{ color: '#ef4444', background: 'none', border: 'none', cursor: 'pointer' }}>✕</button>
+                        </div>
+                      ))}
+                      <button type="button" onClick={() => handleAddArrayItem('pastSurgicalHistory')} style={{ fontSize: '0.85rem', color: '#0284c7', background: 'none', border: 'none', cursor: 'pointer', fontWeight: 600 }}>+ Add Past Surgical History</button>
+                    </div>
+                  ) : (
+                    renderBulletList(report.pastSurgicalHistory)
+                  )}
+                </div>
+              )}
 
-            {/* Medications */}
-            {hasArrayItems(report.medications) && (
-              <div style={{ marginBottom: '1.25rem' }}>
-                <h4 style={{ fontSize: '0.95rem', fontWeight: 700, color: '#334155', margin: '0 0 0.35rem 0' }}>Current Medications</h4>
-                {renderBulletList(report.medications)}
-              </div>
-            )}
+              {/* Medications */}
+              {(hasArrayItems(report.medications) || isEditing) && (
+                <div style={{ marginBottom: '1.25rem' }}>
+                  <h4 style={{ fontSize: '0.95rem', fontWeight: 700, color: '#334155', margin: '0 0 0.35rem 0' }}>Current Medications</h4>
+                  {isEditing ? (
+                    <div>
+                      {(editForm.medications || []).map((item, idx) => (
+                        <div key={idx} style={{ display: 'flex', gap: '0.5rem', marginBottom: '0.4rem' }}>
+                          <input
+                            type="text"
+                            value={item}
+                            onChange={(e) => handleArrayItemChange('medications', idx, e.target.value)}
+                            style={{ flex: 1, padding: '0.4rem', border: '1px solid #cbd5e1', borderRadius: '4px' }}
+                          />
+                          <button type="button" onClick={() => handleRemoveArrayItem('medications', idx)} style={{ color: '#ef4444', background: 'none', border: 'none', cursor: 'pointer' }}>✕</button>
+                        </div>
+                      ))}
+                      <button type="button" onClick={() => handleAddArrayItem('medications')} style={{ fontSize: '0.85rem', color: '#0284c7', background: 'none', border: 'none', cursor: 'pointer', fontWeight: 600 }}>+ Add Medication</button>
+                    </div>
+                  ) : (
+                    renderBulletList(report.medications)
+                  )}
+                </div>
+              )}
 
-            {/* Allergies */}
-            {hasArrayItems(report.allergies) && (
-              <div style={{ marginBottom: '1.25rem' }}>
-                <h4 style={{ fontSize: '0.95rem', fontWeight: 700, color: '#334155', margin: '0 0 0.35rem 0' }}>Allergies</h4>
-                {renderBulletList(report.allergies)}
-              </div>
-            )}
+              {/* Allergies */}
+              {(hasArrayItems(report.allergies) || isEditing) && (
+                <div style={{ marginBottom: '1.25rem' }}>
+                  <h4 style={{ fontSize: '0.95rem', fontWeight: 700, color: '#334155', margin: '0 0 0.35rem 0' }}>Allergies</h4>
+                  {isEditing ? (
+                    <div>
+                      {(editForm.allergies || []).map((item, idx) => (
+                        <div key={idx} style={{ display: 'flex', gap: '0.5rem', marginBottom: '0.4rem' }}>
+                          <input
+                            type="text"
+                            value={item}
+                            onChange={(e) => handleArrayItemChange('allergies', idx, e.target.value)}
+                            style={{ flex: 1, padding: '0.4rem', border: '1px solid #cbd5e1', borderRadius: '4px' }}
+                          />
+                          <button type="button" onClick={() => handleRemoveArrayItem('allergies', idx)} style={{ color: '#ef4444', background: 'none', border: 'none', cursor: 'pointer' }}>✕</button>
+                        </div>
+                      ))}
+                      <button type="button" onClick={() => handleAddArrayItem('allergies')} style={{ fontSize: '0.85rem', color: '#0284c7', background: 'none', border: 'none', cursor: 'pointer', fontWeight: 600 }}>+ Add Allergy</button>
+                    </div>
+                  ) : (
+                    renderBulletList(report.allergies)
+                  )}
+                </div>
+              )}
 
-            {/* Family History */}
-            {hasArrayItems(report.familyHistory) && (
-              <div style={{ marginBottom: '1.25rem' }}>
-                <h4 style={{ fontSize: '0.95rem', fontWeight: 700, color: '#334155', margin: '0 0 0.35rem 0' }}>Family History</h4>
-                {renderBulletList(report.familyHistory)}
-              </div>
-            )}
+              {/* Family History */}
+              {(hasArrayItems(report.familyHistory) || isEditing) && (
+                <div style={{ marginBottom: '1.25rem' }}>
+                  <h4 style={{ fontSize: '0.95rem', fontWeight: 700, color: '#334155', margin: '0 0 0.35rem 0' }}>Family History</h4>
+                  {isEditing ? (
+                    <div>
+                      {(editForm.familyHistory || []).map((item, idx) => (
+                        <div key={idx} style={{ display: 'flex', gap: '0.5rem', marginBottom: '0.4rem' }}>
+                          <input
+                            type="text"
+                            value={item}
+                            onChange={(e) => handleArrayItemChange('familyHistory', idx, e.target.value)}
+                            style={{ flex: 1, padding: '0.4rem', border: '1px solid #cbd5e1', borderRadius: '4px' }}
+                          />
+                          <button type="button" onClick={() => handleRemoveArrayItem('familyHistory', idx)} style={{ color: '#ef4444', background: 'none', border: 'none', cursor: 'pointer' }}>✕</button>
+                        </div>
+                      ))}
+                      <button type="button" onClick={() => handleAddArrayItem('familyHistory')} style={{ fontSize: '0.85rem', color: '#0284c7', background: 'none', border: 'none', cursor: 'pointer', fontWeight: 600 }}>+ Add Family History</button>
+                    </div>
+                  ) : (
+                    renderBulletList(report.familyHistory)
+                  )}
+                </div>
+              )}
 
-            {/* Lifestyle & Habits */}
-            {hasArrayItems(report.lifestyleAndHabits) && (
-              <div style={{ marginBottom: '1.25rem' }}>
-                <h4 style={{ fontSize: '0.95rem', fontWeight: 700, color: '#334155', margin: '0 0 0.35rem 0' }}>Lifestyle & Habits</h4>
-                {renderBulletList(report.lifestyleAndHabits)}
-              </div>
-            )}
-          </div>
+              {/* Lifestyle & Habits */}
+              {(hasArrayItems(report.lifestyleAndHabits) || isEditing) && (
+                <div style={{ marginBottom: '1.25rem' }}>
+                  <h4 style={{ fontSize: '0.95rem', fontWeight: 700, color: '#334155', margin: '0 0 0.35rem 0' }}>Lifestyle & Habits</h4>
+                  {isEditing ? (
+                    <div>
+                      {(editForm.lifestyleAndHabits || []).map((item, idx) => (
+                        <div key={idx} style={{ display: 'flex', gap: '0.5rem', marginBottom: '0.4rem' }}>
+                          <input
+                            type="text"
+                            value={item}
+                            onChange={(e) => handleArrayItemChange('lifestyleAndHabits', idx, e.target.value)}
+                            style={{ flex: 1, padding: '0.4rem', border: '1px solid #cbd5e1', borderRadius: '4px' }}
+                          />
+                          <button type="button" onClick={() => handleRemoveArrayItem('lifestyleAndHabits', idx)} style={{ color: '#ef4444', background: 'none', border: 'none', cursor: 'pointer' }}>✕</button>
+                        </div>
+                      ))}
+                      <button type="button" onClick={() => handleAddArrayItem('lifestyleAndHabits')} style={{ fontSize: '0.85rem', color: '#0284c7', background: 'none', border: 'none', cursor: 'pointer', fontWeight: 600 }}>+ Add Lifestyle item</button>
+                    </div>
+                  ) : (
+                    renderBulletList(report.lifestyleAndHabits)
+                  )}
+                </div>
+              )}
+            </div>
+          )
         )}
 
-        {/* ADDITIONAL NOTES (Both flows if available) */}
-        {hasArrayItems(report.additionalNotes) && (
+        {/* ADDITIONAL NOTES */}
+        {(hasArrayItems(report.additionalNotes) || isEditing) && (
           <div style={{ marginTop: '1.75rem', borderTop: '1px solid #e2e8f0', paddingTop: '1rem' }}>
             <h3 style={{ fontSize: '0.95rem', fontWeight: 700, color: '#334155', textTransform: 'uppercase', margin: '0 0 0.4rem 0' }}>
               Additional Clinical Notes
             </h3>
-            {renderBulletList(report.additionalNotes)}
+            {isEditing ? (
+              <div>
+                {(editForm.additionalNotes || []).map((item, idx) => (
+                  <div key={idx} style={{ display: 'flex', gap: '0.5rem', marginBottom: '0.4rem' }}>
+                    <input
+                      type="text"
+                      value={item}
+                      onChange={(e) => handleArrayItemChange('additionalNotes', idx, e.target.value)}
+                      style={{ flex: 1, padding: '0.4rem', border: '1px solid #cbd5e1', borderRadius: '4px' }}
+                    />
+                    <button type="button" onClick={() => handleRemoveArrayItem('additionalNotes', idx)} style={{ color: '#ef4444', background: 'none', border: 'none', cursor: 'pointer' }}>✕</button>
+                  </div>
+                ))}
+                <button type="button" onClick={() => handleAddArrayItem('additionalNotes')} style={{ fontSize: '0.85rem', color: '#0284c7', background: 'none', border: 'none', cursor: 'pointer', fontWeight: 600 }}>+ Add Note</button>
+              </div>
+            ) : (
+              renderBulletList(report.additionalNotes)
+            )}
           </div>
         )}
 

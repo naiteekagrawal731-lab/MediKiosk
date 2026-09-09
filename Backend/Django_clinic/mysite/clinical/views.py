@@ -789,6 +789,7 @@ class ClinicalSummaryView(APIView):
     """
 
     def get(self, request, session_id):
+        print("summary ")
 
         session = get_session_or_404(session_id)
 
@@ -805,6 +806,7 @@ class ClinicalSummaryView(APIView):
                 {"message": "Clinical summary not generated yet."},
                 status=status.HTTP_404_NOT_FOUND
             )
+        print("summary sent")
 
         serializer = ClinicalSummarySerializer(summary)
 

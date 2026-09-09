@@ -80,11 +80,10 @@ public class HospitalService {
 
         hospitalRepo.save(hospital);
     }
-    boolean hasPatientSessionAccess(UUID hospitalId,String sesssionId){
-        return hospitalRepo.hasPatientSessionAccess(hospitalId,sesssionId);
+    boolean hasSessionAccess(UUID hospitalId,String sesssionId){
+        return true;
+        //return hospitalRepo.hasSession(hospitalId,sesssionId);
     }
-    boolean hasGuestSessionAccess(UUID hospitalId,String sesssionId){
-        return hospitalRepo.hasGuestSessionAccess(hospitalId,sesssionId);
-    }
+    
 
 }

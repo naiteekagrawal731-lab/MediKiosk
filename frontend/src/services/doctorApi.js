@@ -38,7 +38,9 @@ export const getDoctorClinicalSession = async (sessionId) => {
     throw new Error(errorMsg);
   }
 
-  return await response.json();
+  let val = await response.json();
+  console.log("SPRING CLINICAL SESSION RESPONSE:", val);
+  return val;
 };
 
 /**

@@ -6,6 +6,7 @@ import com.sih.MediKiosk.dtos.requestDtos.PatientLoginRequest;
 import com.sih.MediKiosk.dtos.responseDtos.ClinicalSessionDto;
 import com.sih.MediKiosk.dtos.responseDtos.ClinicalSessionSummaryDto;
 import com.sih.MediKiosk.dtos.responseDtos.CreateSessionResponse;
+import com.sih.MediKiosk.dtos.responseDtos.DjangoClinicalSessionResponse;
 import com.sih.MediKiosk.models.ClinicalSession;
 import com.sih.MediKiosk.services.PatientService;
 import com.sih.MediKiosk.services.UsernamePasswordLoginService;
@@ -37,7 +38,7 @@ public class PatientController {
     }
 
     @GetMapping("/clinicalsession")
-    public ResponseEntity<ClinicalSessionSummaryDto> getClinicalSeasssion(@RequestBody GetSessionRequest request){
+    public ResponseEntity<DjangoClinicalSessionResponse> getClinicalSeasssion(@RequestBody GetSessionRequest request){
         return patientService.getClinicalSeassion(request);
     }
 
