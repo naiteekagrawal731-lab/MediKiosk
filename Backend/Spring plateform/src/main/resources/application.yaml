@@ -1,20 +1,13 @@
-django:
-  api:
-    key: 4fewjfiwfwoejrqioq
-
 spring:
   servlet:
     multipart:
       max-file-size: 100MB
       max-request-size: 100MB
 
-
   datasource:
-    url: ${DATABASE_URL:jdbc:postgresql://localhost:5432/medikiosk}
-    username: ${DATABASE_USERNAME:postgres}
-    password: ${DATABASE_PASSWORD:sqllitepython}
-
-
+    url: ${DATABASE_URL}
+    username: ${DATABASE_USERNAME}
+    password: ${DATABASE_PASSWORD}
 
   jpa:
     hibernate:
@@ -24,15 +17,18 @@ spring:
   sql:
     init:
       mode: always
+
 server:
-  port: ${PORT:1000}
+  port: ${PORT:10000}
   address: 0.0.0.0
 
+django:
+  api:
+    key: ${DJANGO_API_KEY:the-key}
 
-# JWT secret must be at least 32 chars (256 bits) for HS256
 jwt:
-  secret: ${JWT_SECRET:MediKiosk-Secret-Key-2026-SIH-32c}
+  secret: ${JWT_SECRET:the-key}
 
 gemini:
   api:
-    key: ${GEMINI_API_KEY:your-gemini-api-key-here}
+    key: ${GEMINI_API_KEY:the-key}
