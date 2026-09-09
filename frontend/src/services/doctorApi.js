@@ -9,49 +9,32 @@ const DJANGO_API_URL = import.meta.env.VITE_DJANGO_API_URL || 'http://localhost:
  */
 export const getDoctorClinicalSession = async (sessionId) => {
   const cleanId = String(sessionId).trim();
+
   if (!cleanId) {
     throw new Error('Session ID is required.');
   }
 
-  // Attempt POST /doctor/clinicalsession/ first per contract
-  let response = await apiFetch('/doctor/clinicalsession/', {
+  const response = await apiFetch('/doctor/clinicalsession', {
     method: 'POST',
-    body: JSON.stringify({ sessionId: cleanId }),
+    headers: {
+      'Content-Type': 'text/plain',
+    },
+    body: cleanId,
   });
-
-  if (!response.ok && response.status === 404) {
-    // Retry without trailing slash
-    response = await apiFetch('/doctor/clinicalsession', {
-      method: 'POST',
-      body: JSON.stringify({ sessionId: cleanId }),
-    });
-  }
-
-  if (!response.ok && (response.status === 405 || response.status === 400)) {
-    // Fallback: send raw string body if backend expects @RequestBody String
-    response = await apiFetch('/doctor/clinicalsession', {
-      method: 'POST',
-      headers: { 'Content-Type': 'text/plain' },
-      body: cleanId,
-    });
-  }
-
-  if (!response.ok && response.status === 405) {
-    // Fallback GET request if backend mapped @GetMapping("/clinicalsession")
-    response = await apiFetch(`/doctor/clinicalsession?sessionId=${encodeURIComponent(cleanId)}`, {
-      method: 'GET',
-    });
-  }
 
   if (!response.ok) {
     let errorMsg = `Unable to fetch session summary (Status ${response.status}).`;
+
     try {
       const errJson = await response.json();
       errorMsg = errJson.message || errJson.error || errorMsg;
     } catch {
       const text = await response.text();
-      if (text) errorMsg = text;
+      if (text) {
+        errorMsg = text;
+      }
     }
+
     throw new Error(errorMsg);
   }
 

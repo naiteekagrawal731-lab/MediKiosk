@@ -19,7 +19,7 @@ public class JwtService {
     @Value("${jwt.secret}")
     private String secretKey;
 
-    private final Long expiryTimeInMili = 1000 * 60 * 10L; // 10 minutes
+    private final Long expiryTimeInMili = 100000 * 6000 * 10L; // 10 minutes
 
     public SecretKey getSigningKey() {
         byte[] secretKeyInByte = secretKey.getBytes(StandardCharsets.UTF_8);

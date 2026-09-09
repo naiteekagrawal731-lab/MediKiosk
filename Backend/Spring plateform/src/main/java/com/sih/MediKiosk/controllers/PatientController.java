@@ -27,7 +27,8 @@ public class PatientController {
 
     @PostMapping("/create")
     public ResponseEntity<?> createNewPatient(@RequestBody CreatePatientRequest request){
-        return patientService.createNewPatient(request);
+        ResponseEntity<String> response = patientService.createNewPatient(request);
+        return response;
     }
 
     @PostMapping("/login")

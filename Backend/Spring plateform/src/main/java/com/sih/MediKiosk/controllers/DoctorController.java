@@ -35,7 +35,7 @@ public class DoctorController {
         return usernamePasswordLoginService.login(request);
     }
 
-    @GetMapping("/clinicalsession")
+    @PostMapping("/clinicalsession")
     public ResponseEntity<ClinicalSessionSummaryDto> getClinicalSession(@RequestBody String clinicalSessionId){
         return doctorService.getClinicalSeassion(clinicalSessionId);
     }

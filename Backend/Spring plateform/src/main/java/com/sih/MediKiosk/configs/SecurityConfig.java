@@ -43,10 +43,11 @@ public class SecurityConfig {
                                 "/doctor/login",
                                 "/guest/**",
                                 "/hospital/create",
+                                "/hospital/login",
                                 "/api/logout",
                                 "/patient/create",
-                                "/patient/login",
-                                "/**"
+                                "/patient/login"
+                            
                         )
                         .permitAll()
                         .anyRequest().authenticated())

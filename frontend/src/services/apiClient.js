@@ -1,74 +1,81 @@
-const SPRING_API_URL = import.meta.env.VITE_SPRING_API_URL || 'http://localhost:8080';
+const SPRING_API_URL =
+  import.meta.env.VITE_SPRING_API_URL || 'http://localhost:8080';
 
-let tokenStore = {
-  accessToken: null,
-};
+let accessToken = null;
 
+// Store access token only in memory
 export const setAccessToken = (token) => {
-  tokenStore.accessToken = token;
+  accessToken = token;
 };
 
 export const getAccessToken = () => {
-  return tokenStore.accessToken;
+  return accessToken;
 };
 
 export const clearAccessToken = () => {
-  tokenStore.accessToken = null;
+  accessToken = null;
 };
 
-// Request refresh token when access token is expired or missing
+
+// ==========================================
+// GET ACCESS TOKEN USING REFRESH TOKEN COOKIE
+// ==========================================
 export const refreshAccessToken = async () => {
-  try {
-    // Attempt POST first as requested in contract, with fallback to GET if 405 occurs
-    let response = await fetch(`${SPRING_API_URL}/api/auth/token`, {
-      method: 'GET',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      credentials: 'include', // Send HTTP refresh token cookie
-    });
+  const response = await fetch(`${SPRING_API_URL}/api/auth/token`, {
+    method: 'GET',
+    credentials: 'include',
+  });
 
-    if (response.status === 405) {
-      // Fallback for GET mapping if backend maps GET /api/auth/token
-      response = await fetch(`${SPRING_API_URL}/api/auth/token`, {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        credentials: 'include',
-      });
-    }
-
-    if (!response.ok) {
-      throw new Error(`Token refresh failed with status ${response.status}`);
-    }
-
-    const data = await response.json();
-    const newAccessToken = typeof data === 'string' ? data : (data.accessToken || data.access_token || data.token);
-
-    if (!newAccessToken) {
-      throw new Error('Access token not found in refresh response');
-    }
-
-    setAccessToken(newAccessToken);
-    return newAccessToken;
-  } catch (error) {
-    console.error('Failed to refresh access token:', error);
+  if (!response.ok) {
     clearAccessToken();
-    throw error;
+    throw new Error(
+      `Token refresh failed with status ${response.status}`
+    );
   }
+
+  const data = await response.json();
+
+  const newAccessToken =
+    typeof data === 'string'
+      ? data
+      : data.accessToken ||
+        data.access_token ||
+        data.token;
+
+  if (!newAccessToken) {
+    clearAccessToken();
+    throw new Error('Access token not found in refresh response');
+  }
+
+  // Store access token in memory
+  setAccessToken(newAccessToken);
+
+  console.log('Access token obtained successfully');
+
+  return newAccessToken;
 };
 
-// Centralized authenticated fetch client
-export const apiFetch = async (endpoint, options = {}, isRetry = false) => {
-  const url = endpoint.startsWith('http') ? endpoint : `${SPRING_API_URL}${endpoint}`;
-  
+
+// ==========================================
+// CENTRAL API FETCH
+// ==========================================
+export const apiFetch = async (
+  endpoint,
+  options = {},
+  isRetry = false
+) => {
+  const url = endpoint.startsWith('http')
+    ? endpoint
+    : `${SPRING_API_URL}${endpoint}`;
+
   const headers = {
     'Content-Type': 'application/json',
     ...(options.headers || {}),
   };
 
+  // Get access token from memory
   const currentToken = getAccessToken();
+
   if (currentToken) {
     headers['Authorization'] = `Bearer ${currentToken}`;
   }
@@ -76,23 +83,34 @@ export const apiFetch = async (endpoint, options = {}, isRetry = false) => {
   const fetchOptions = {
     ...options,
     headers,
-    credentials: 'include', // Ensure cookies are included
+    credentials: 'include',
   };
 
   let response = await fetch(url, fetchOptions);
 
-  // If unauthorized (401) and not already retrying, attempt token refresh once
+
+  // ==========================================
+  // ACCESS TOKEN EXPIRED
+  // ==========================================
   if (response.status === 401 && !isRetry) {
     try {
       const newToken = await refreshAccessToken();
-      headers['Authorization'] = `Bearer ${newToken}`;
+
+      const retryHeaders = {
+        ...headers,
+        Authorization: `Bearer ${newToken}`,
+      };
+
       response = await fetch(url, {
         ...fetchOptions,
-        headers,
+        headers: retryHeaders,
       });
-    } catch (refreshErr) {
-      console.warn('Token refresh failed during API call retry:', refreshErr);
-      return response;
+
+    } catch (error) {
+      console.error(
+        'Unable to refresh access token:',
+        error
+      );
     }
   }
 
