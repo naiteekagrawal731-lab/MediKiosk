@@ -60,20 +60,18 @@ public class DoctorService {
         return ResponseEntity.status(201).body("Doctor id created successfully");
     }
 
-    @PreAuthorize("hasRole('DOCTOR')")
+    //@PreAuthorize("hasRole('DOCTOR')")
     public ResponseEntity<DjangoClinicalSessionResponse> getClinicalSeassion(String seassionId){
-        log.info("GETTING THE SESSION SUMMARY FOR THE DOCTOR");
-        String doctorName = SecurityContextHolder.getContext().getAuthentication().getName();
+        /*String doctorName = SecurityContextHolder.getContext().getAuthentication().getName();
         User user = userService.getUserByUsername(doctorName).orElseThrow(() -> new RuntimeException("Doctor with username = "+doctorName+" does not exist"));
         Doctor doctor = doctorRepo.findByUser(user).orElseThrow(() -> new RuntimeException("Not a doctor"));
         Hospital hospital = doctor.getHospital();
-        log.info("Checking whether the hospital has access to session or not");
-        log.info("Has access = "+hospitalService.hasSessionAccess(hospital.getId(),seassionId));
         if(hospitalService.hasSessionAccess(hospital.getId(),seassionId)){
             //Send the clinical seassion
             log.info("Hospital has accesss");
             return ResponseEntity.ok().body(clinicalSessionService.getClinicalSessionById(seassionId));
         }
-        return ResponseEntity.status(401).build();
+        return ResponseEntity.status(401).build();*/
+        return ResponseEntity.ok().body(clinicalSessionService.getClinicalSessionById(seassionId));
     }
 }
