@@ -89,6 +89,14 @@ function App() {
                 </ProtectedRoute>
               }
             />
+            <Route
+              path="/doctor/session/:sessionId"
+              element={
+                <ProtectedRoute allowedRoles={['DOCTOR']}>
+                  <DoctorDashboardPage />
+                </ProtectedRoute>
+              }
+            />
 
             {/* 404 & Fallback */}
             <Route path="/404" element={<NotFoundPage />} />

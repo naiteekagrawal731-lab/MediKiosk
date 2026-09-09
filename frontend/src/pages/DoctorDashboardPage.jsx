@@ -1,12 +1,14 @@
-import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { useNavigate, useParams } from 'react-router-dom';
 import { PageContainer } from '../components/PageContainer';
 import { useAuth } from '../context/AuthContext';
 import { getDoctorClinicalSession } from '../services/doctorApi';
 import { PatientSummaryReport } from '../components/PatientSummaryReport';
+import { QrScannerModal, extractSessionIdFromQr } from '../components/QrScannerModal';
 
 export const DoctorDashboardPage = () => {
   const navigate = useNavigate();
+  const { sessionId: routeSessionId } = useParams();
   const { user, logoutUser, changeUserPassword } = useAuth();
 
   // Navigation tab state: 'session' | 'profile'
@@ -18,6 +20,7 @@ export const DoctorDashboardPage = () => {
   const [summaryError, setSummaryError] = useState('');
   const [activeSessionSummary, setActiveSessionSummary] = useState(null);
   const [activeSessionId, setActiveSessionId] = useState('');
+  const [showScanner, setShowScanner] = useState(false);
 
   // Change Password State
   const [newPassword, setNewPassword] = useState('');
@@ -30,7 +33,41 @@ export const DoctorDashboardPage = () => {
     navigate('/staff');
   };
 
-  const handleGetSummary = async (e) => {
+  const fetchClinicalSession = async (targetSessionId) => {
+    const cleanId = String(targetSessionId || '').trim();
+    if (!cleanId) {
+      setSummaryError('Please enter a valid Patient Session ID.');
+      return;
+    }
+
+    setSummaryError('');
+    setLoadingSummary(true);
+
+    try {
+      const data = await getDoctorClinicalSession(cleanId);
+      setActiveSessionSummary(data);
+      setActiveSessionId(cleanId);
+    } catch (err) {
+      console.error('Fetch summary error:', err);
+      setSummaryError(err.message || 'Failed to fetch patient summary. Please check the Session ID.');
+      setActiveSessionSummary(null);
+    } finally {
+      setLoadingSummary(false);
+    }
+  };
+
+  // Load summary automatically when route parameter /doctor/session/:sessionId changes
+  useEffect(() => {
+    if (routeSessionId) {
+      setSessionIdInput(routeSessionId);
+      fetchClinicalSession(routeSessionId);
+    } else {
+      setActiveSessionSummary(null);
+      setActiveSessionId('');
+    }
+  }, [routeSessionId]);
+
+  const handleGetSummary = (e) => {
     e.preventDefault();
     setSummaryError('');
 
@@ -40,23 +77,29 @@ export const DoctorDashboardPage = () => {
       return;
     }
 
-    setLoadingSummary(true);
-    try {
-      const data = await getDoctorClinicalSession(cleanId);
-      setActiveSessionSummary(data);
-      setActiveSessionId(cleanId);
-    } catch (err) {
-      console.error('Fetch summary error:', err);
-      setSummaryError(err.message || 'Failed to fetch patient summary. Please check the Session ID.');
-    } finally {
-      setLoadingSummary(false);
+    if (routeSessionId === cleanId) {
+      fetchClinicalSession(cleanId);
+    } else {
+      navigate(`/doctor/session/${cleanId}`);
     }
+  };
+
+  const handleQrScanSuccess = (decodedText) => {
+    const extractedId = extractSessionIdFromQr(decodedText);
+    if (!extractedId) {
+      setSummaryError('Invalid MediKiosk QR code.');
+      setShowScanner(false);
+      return;
+    }
+    setShowScanner(false);
+    navigate(`/doctor/session/${extractedId}`);
   };
 
   const handleBackToLookup = () => {
     setActiveSessionSummary(null);
     setActiveSessionId('');
     setSummaryError('');
+    navigate('/doctor/dashboard');
   };
 
   const handleChangePassword = async (e) => {
@@ -166,7 +209,7 @@ export const DoctorDashboardPage = () => {
                   View Patient Summary
                 </h2>
                 <p style={{ color: '#64748b', fontSize: '0.95rem', marginBottom: '1.5rem' }}>
-                  Enter the patient's Clinical Session ID below to load their intake record and assessment.
+                  Enter the patient's Clinical Session ID below or scan their QR code to load their intake record and assessment.
                 </p>
 
                 {summaryError && (
@@ -183,7 +226,7 @@ export const DoctorDashboardPage = () => {
                     <input
                       id="sessionIdInput"
                       type="text"
-                      placeholder="e.g. SESS-1024-88A or UUID"
+                      placeholder="e.g. AB12CD34"
                       value={sessionIdInput}
                       onChange={(e) => setSessionIdInput(e.target.value)}
                       style={{
@@ -198,23 +241,47 @@ export const DoctorDashboardPage = () => {
                     />
                   </div>
 
-                  <button
-                    type="submit"
-                    disabled={loadingSummary}
-                    style={{
-                      width: '100%',
-                      padding: '0.85rem',
-                      fontSize: '1.05rem',
-                      fontWeight: 700,
-                      backgroundColor: '#0284c7',
-                      color: '#ffffff',
-                      border: 'none',
-                      borderRadius: '6px',
-                      cursor: 'pointer',
-                    }}
-                  >
-                    {loadingSummary ? 'Loading Clinical Summary...' : 'Get Summary →'}
-                  </button>
+                  <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
+                    <button
+                      type="submit"
+                      disabled={loadingSummary}
+                      style={{
+                        flex: 1,
+                        minWidth: '180px',
+                        padding: '0.85rem',
+                        fontSize: '1.05rem',
+                        fontWeight: 700,
+                        backgroundColor: '#0284c7',
+                        color: '#ffffff',
+                        border: 'none',
+                        borderRadius: '6px',
+                        cursor: 'pointer',
+                      }}
+                    >
+                      {loadingSummary ? 'Loading Clinical Summary...' : 'Get Summary →'}
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => setShowScanner(true)}
+                      style={{
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        gap: '0.4rem',
+                        padding: '0.85rem 1.25rem',
+                        fontSize: '1.05rem',
+                        fontWeight: 700,
+                        backgroundColor: '#0f172a',
+                        color: '#ffffff',
+                        border: 'none',
+                        borderRadius: '6px',
+                        cursor: 'pointer',
+                      }}
+                    >
+                      📷 Scan QR
+                    </button>
+                  </div>
                 </form>
               </div>
             )}
@@ -317,6 +384,15 @@ export const DoctorDashboardPage = () => {
         )}
 
       </div>
+
+      {/* QR SCANNER MODAL */}
+      {showScanner && (
+        <QrScannerModal
+          onClose={() => setShowScanner(false)}
+          onScanSuccess={handleQrScanSuccess}
+        />
+      )}
     </PageContainer>
   );
 };
+

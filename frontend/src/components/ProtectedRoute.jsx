@@ -7,7 +7,10 @@ export const ProtectedRoute = ({ allowedRoles = [], children }) => {
   const location = useLocation();
 
   if (!isAuthenticated) {
-    // Redirect to staff portal if accessing staff/admin features
+    if (allowedRoles.includes('DOCTOR') || location.pathname.startsWith('/doctor')) {
+      return <Navigate to="/doctor/login" state={{ from: location }} replace />;
+    }
+    // Redirect to staff portal if accessing other staff/admin features
     return <Navigate to="/staff" state={{ from: location }} replace />;
   }
 

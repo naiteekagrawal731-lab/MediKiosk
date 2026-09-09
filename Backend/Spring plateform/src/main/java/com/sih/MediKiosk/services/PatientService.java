@@ -83,7 +83,10 @@ public class PatientService {
         List<ClinicalSession> clinicalSessions = patient.getClinicalSessions();
         for(ClinicalSession clinicalSession : clinicalSessions){
             if(!clinicalSession.isHasGottenSummary()){
-                clinicalSession.setSummary(clinicalSessionService.getClinicalSessionById(clinicalSession.getId()).getOverallSummary());
+                DjangoClinicalSessionResponse resp = clinicalSessionService.getClinicalSessionById(clinicalSession.getId());
+                if (resp != null && resp.getSummaryData() != null) {
+                    clinicalSession.setSummary(resp.getSummaryData().getOverallSummary());
+                }
                 clinicalSession.setHasGottenSummary(true);
             }
         }

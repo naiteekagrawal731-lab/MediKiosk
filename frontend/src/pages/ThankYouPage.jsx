@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
+import { QRCodeSVG } from 'qrcode.react';
 import { PageContainer } from '../components/PageContainer';
 import { Button } from '../components/Button';
 import { SpeakerButton } from '../components/SpeakerButton';
@@ -17,6 +18,9 @@ export const ThankYouPage = () => {
   const t = translations[lang] || translations['EN'];
 
   const [timeLeft, setTimeLeft] = useState(60);
+
+  const cleanSessionId = (sessionId || '').trim();
+  const qrValue = cleanSessionId ? `${window.location.origin}/doctor/session/${cleanSessionId}` : '';
 
   const handleEndSession = () => {
     if (window.speechSynthesis) {
@@ -73,13 +77,34 @@ export const ThankYouPage = () => {
           margin: '0 auto 2rem auto',
           boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.05)'
         }}>
-          <h2 style={{ fontSize: '1.75rem', margin: '0 0 1rem 0', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+          <h2 style={{ fontSize: '1.5rem', margin: '0 0 1rem 0', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
             {t.sessionIdTitle}
           </h2>
-          <div style={{ fontSize: '4rem', fontWeight: '800', letterSpacing: '6px', color: 'var(--text-main)' }}>
-            {sessionId ? sessionId.toUpperCase() : ''}
+
+          <div style={{ fontSize: '3.5rem', fontWeight: '800', letterSpacing: '4px', color: 'var(--text-main)', marginBottom: '1.5rem' }}>
+            {cleanSessionId ? cleanSessionId.toUpperCase() : ''}
           </div>
-          <p style={{ fontSize: '1.25rem', marginTop: '1.5rem', color: 'var(--text-main)', fontWeight: '500' }}>
+
+          {qrValue && (
+            <div style={{
+              backgroundColor: '#ffffff',
+              padding: '1rem',
+              borderRadius: '12px',
+              display: 'inline-block',
+              border: '1px solid #cbd5e1',
+              boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.05)',
+              marginBottom: '1rem'
+            }}>
+              <QRCodeSVG
+                value={qrValue}
+                size={190}
+                level="H"
+                includeMargin={true}
+              />
+            </div>
+          )}
+
+          <p style={{ fontSize: '1.2rem', marginTop: '1rem', color: 'var(--text-main)', fontWeight: '500', lineHeight: 1.5 }}>
             {t.sessionIdInstruction}
           </p>
         </div>

@@ -1,11 +1,12 @@
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { PageContainer } from '../components/PageContainer';
 import { loginDoctor } from '../services/hospitalApi';
 import { useAuth } from '../context/AuthContext';
 
 export const DoctorLoginPage = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const { loginUser } = useAuth();
 
   const [username, setUsername] = useState('');
@@ -40,7 +41,8 @@ export const DoctorLoginPage = () => {
         accessToken: result.accessToken,
       });
 
-      navigate('/doctor/dashboard');
+      const fromPath = location.state?.from?.pathname || '/doctor/dashboard';
+      navigate(fromPath, { replace: true });
     } catch (err) {
       console.error('Doctor login error:', err);
       setErrorMsg(err.message || 'Doctor login failed. Check username and password.');
