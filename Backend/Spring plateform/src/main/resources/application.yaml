@@ -25,7 +25,8 @@ spring:
     init:
       mode: always
 server:
-  port: 8081
+  port: ${PORT:1000}
+  address: 0.0.0.0
 
 
 # JWT secret must be at least 32 chars (256 bits) for HS256
