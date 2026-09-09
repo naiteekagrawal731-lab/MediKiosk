@@ -17,7 +17,7 @@ public class DjangoClient {
                       @Value("${django.api.key}") String apiKey) {
 
         this.webClient = builder
-                .baseUrl("/djangoEndpoint")
+                .baseUrl("/https/localhost.8000")
                 .defaultHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
                 .defaultHeader("API-KEY", apiKey)
                 .build();
