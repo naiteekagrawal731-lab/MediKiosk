@@ -3,10 +3,7 @@ package com.sih.MediKiosk.services;
 import com.sih.MediKiosk.dtos.requestDtos.CreateDoctorRequest;
 import com.sih.MediKiosk.dtos.requestDtos.RegistrationRequest;
 import com.sih.MediKiosk.dtos.responseDtos.ClinicalSessionSummaryDto;
-import com.sih.MediKiosk.models.ClinicalSession;
-import com.sih.MediKiosk.models.Doctor;
-import com.sih.MediKiosk.models.Hospital;
-import com.sih.MediKiosk.models.User;
+import com.sih.MediKiosk.models.*;
 import com.sih.MediKiosk.repos.DoctorRepo;
 
 import jakarta.transaction.Transactional;
@@ -46,7 +43,7 @@ public class DoctorService {
         registrationService.register(RegistrationRequest.builder()
                         .username(request.getUsername())
                         .password(request.getPassword())
-                .build());
+                .build(), Role.DOCTOR);
         log.info("Doctor user profile created with username = "+request.getUsername());
         User user = userService.getUserByUsername(request.getUsername()).orElseThrow(() -> new RuntimeException("Doctor with username = "+request.getUsername()+" does not exist"));
         log.info("Got the user");
