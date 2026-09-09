@@ -29,11 +29,15 @@ DEBUG = config("DEBUG", default=False, cast=bool)
 #     default="localhost,127.0.0.1"
 # ).split(",")
 
-ALLOWED_HOSTS=[]
+ALLOWED_HOSTS = config(
+    "ALLOWED_HOSTS",
+    default="localhost,127.0.0.1"
+).split(",")
 
 # Application definition 
 
 INSTALLED_APPS = [
+    'ai',
     'clinical',
     "rest_framework",
     "corsheaders",
@@ -58,7 +62,15 @@ MIDDLEWARE = [
 
 ROOT_URLCONF = 'mysite.urls'
 
-CORS_ALLOW_ALL_ORIGINS = True #⚠️ This is convenient for development. Later, when deploying, we'll restrict it to your actual React frontend URL.
+CORS_ALLOWED_ORIGINS = config(
+    "CORS_ALLOWED_ORIGINS",
+    default="http://localhost:5173"
+).split(",") #⚠️ This is convenient for development. Later, when deploying, we'll restrict it to your actual React frontend URL.
+
+CSRF_TRUSTED_ORIGINS = config(
+    "CSRF_TRUSTED_ORIGINS",
+    default="http://localhost:5173"
+).split(",")
 
 TEMPLATES = [
     {
@@ -133,11 +145,11 @@ STATIC_URL = 'static/'
 # Email
 # https://docs.djangoproject.com/en/6.1/topics/email/#topic-email-configuration
 
-MAILERS = {
-    'default': {
-        'BACKEND': 'django.core.mail.backends.console.EmailBackend',
-    },
-}
+# MAILERS = {
+#     'default': {
+#         'BACKEND': 'django.core.mail.backends.console.EmailBackend',
+#     },
+# }
 
 REST_FRAMEWORK = {
     "DEFAULT_PERMISSION_CLASSES": [
@@ -151,3 +163,15 @@ MEDIA_ROOT = BASE_DIR / "media"
 
 SARVAM_API_KEY = config("SARVAM_API_KEY")
 GEMINI_API_KEY = config("GEMINI_API_KEY")
+
+# HTTPS
+SECURE_SSL_REDIRECT = True
+SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
+
+# Cookies
+SESSION_COOKIE_SECURE = True
+CSRF_COOKIE_SECURE = True
+
+# HSTS - enable after HTTPS is confirmed working
+SECURE_HSTS_SECONDS = 31536000
+SECURE_HSTS_INCLUDE_SUBDOMAINS = True
