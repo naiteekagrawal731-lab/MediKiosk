@@ -17,12 +17,16 @@
 
 body {
   font-family: var(--font-family);
-  background-color: #f0f9ff;
+  background-color: #EAF5FC;
   color: var(--text-main);
   -webkit-font-smoothing: antialiased;
 }
 
-/* Kiosk Page Container with Reference Image 2 subtle medical background style */
+/* ── Kiosk Page Container ──
+   Background is provided by the <HealthcareBackground> SVG React component
+   (z-index: 0) embedded inside this container. All page content sits above it
+   via .kiosk-page-wrapper (z-index: 2) and .kiosk-header (z-index: 10).
+*/
 .kiosk-page-container {
   min-height: 100vh;
   display: flex;
@@ -30,25 +34,9 @@ body {
   align-items: center;
   justify-content: flex-start;
   padding: 1.5rem 1rem 3rem 1rem;
-  background: linear-gradient(135deg, #f0fdfa 0%, #e0f2fe 50%, #f8fafc 100%);
+  background-color: #EAF5FC;
   position: relative;
   overflow-x: hidden;
-}
-
-/* Subtle Medical Cross SVG Pattern Overlay (Reference Image 2 Background Style) */
-.kiosk-page-container::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background-image: 
-    radial-gradient(circle at 10% 20%, rgba(14, 165, 233, 0.04) 0%, transparent 40%),
-    radial-gradient(circle at 90% 80%, rgba(56, 189, 248, 0.04) 0%, transparent 40%),
-    url("data:image/svg+xml,%3Csvg width='120' height='120' viewBox='0 0 120 120' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M60 45v30M45 60h30' stroke='%230ea5e9' stroke-width='3' stroke-linecap='round' opacity='0.06'/%3E%3Cpath d='M20 15v10M15 20h10' stroke='%230ea5e9' stroke-width='2' stroke-linecap='round' opacity='0.04'/%3E%3Cpath d='M100 85v10M95 90h10' stroke='%230ea5e9' stroke-width='2' stroke-linecap='round' opacity='0.04'/%3E%3C/svg%3E");
-  pointer-events: none;
-  z-index: 1;
 }
 
 .kiosk-page-wrapper {
