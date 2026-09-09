@@ -1,24 +1,51 @@
-# ---------- Build stage ----------
-FROM maven:3.9-eclipse-temurin-21 AS build
+# =========================
+# Stage 1 - Build Frontend
+# =========================
+FROM node:22-alpine AS frontend-build
+
+WORKDIR /frontend
+
+COPY frontend/package*.json ./
+
+RUN npm ci
+
+COPY frontend/ .
+
+# Fix Vite permission issue
+RUN chmod +x node_modules/.bin/vite
+
+RUN npm run build
+
+
+# =========================
+# Stage 2 - Build Backend
+# =========================
+FROM eclipse-temurin:25-jdk AS backend-build
 
 WORKDIR /app
 
-COPY pom.xml .
+COPY . .
 
-RUN mvn dependency:go-offline -B
+RUN chmod +x mvnw
 
-COPY src ./src
+# Copy frontend build into Spring Boot static resources
+RUN mkdir -p src/main/resources/static
+RUN rm -rf src/main/resources/static/*
+COPY --from=frontend-build /frontend/dist/ src/main/resources/static/
 
-RUN mvn clean package -DskipTests
+# Build Spring Boot application
+RUN ./mvnw clean package -DskipTests
 
 
-# ---------- Runtime stage ----------
-FROM eclipse-temurin:21-jre
+# =========================
+# Stage 3 - Runtime
+# =========================
+FROM eclipse-temurin:25-jre
 
 WORKDIR /app
 
-COPY --from=build /app/target/*.jar app.jar
+COPY --from=backend-build /app/target/*.jar app.jar
 
-EXPOSE 10000
+EXPOSE 8080
 
 ENTRYPOINT ["java", "-jar", "app.jar"]
