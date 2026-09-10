@@ -64,10 +64,7 @@ MIDDLEWARE = [
 
 ROOT_URLCONF = 'mysite.urls'
 
-CORS_ALLOWED_ORIGINS = config(
-    "CORS_ALLOWED_ORIGINS",
-    default="http://localhost:5173"
-).split(",") #⚠️ This is convenient for development. Later, when deploying, we'll restrict it to your actual React frontend URL.
+CORS_ALLOW_ALL_ORIGINS = True
 
 CSRF_TRUSTED_ORIGINS = config(
     "CSRF_TRUSTED_ORIGINS",
