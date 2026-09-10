@@ -39,6 +39,7 @@ export const DoctorLoginPage = () => {
         role: 'DOCTOR',
         username: username.trim(),
         accessToken: result.accessToken,
+        refreshToken: result.refreshToken,
       });
 
       const fromPath = location.state?.from?.pathname || '/doctor/dashboard';

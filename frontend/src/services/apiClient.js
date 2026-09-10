@@ -1,9 +1,12 @@
 const SPRING_API_URL =
   import.meta.env.VITE_SPRING_API_URL || 'https://medikiosk-mmys.onrender.com';
 
+// ==========================================
+// IN-MEMORY ACCESS TOKEN
+// ==========================================
+
 let accessToken = null;
 
-// Store access token only in memory
 export const setAccessToken = (token) => {
   accessToken = token;
 };
@@ -18,16 +21,61 @@ export const clearAccessToken = () => {
 
 
 // ==========================================
-// GET ACCESS TOKEN USING REFRESH TOKEN COOKIE
+// REFRESH TOKEN — sessionStorage
 // ==========================================
+
+const REFRESH_TOKEN_KEY = 'medikiosk_refresh_token';
+
+export const storeRefreshToken = (token) => {
+  if (token) {
+    sessionStorage.setItem(REFRESH_TOKEN_KEY, token);
+  }
+};
+
+export const getStoredRefreshToken = () => {
+  return sessionStorage.getItem(REFRESH_TOKEN_KEY) || null;
+};
+
+export const clearRefreshToken = () => {
+  sessionStorage.removeItem(REFRESH_TOKEN_KEY);
+};
+
+
+// ==========================================
+// HANDLE AUTH FAILURE — clear all auth state
+// Called when refresh token is invalid/expired
+// ==========================================
+
+const handleAuthFailure = () => {
+  clearAccessToken();
+  clearRefreshToken();
+  sessionStorage.removeItem('medikiosk_auth_state');
+};
+
+
+// ==========================================
+// GET ACCESS TOKEN USING STORED REFRESH TOKEN
+// POST /api/auth/token  { "refresh_token": "..." }
+// ==========================================
+
 export const refreshAccessToken = async () => {
+  const refreshToken = getStoredRefreshToken();
+
+  if (!refreshToken) {
+    handleAuthFailure();
+    throw new Error('No refresh token available — user must log in again.');
+  }
+
   const response = await fetch(`${SPRING_API_URL}/api/auth/token`, {
-    method: 'GET',
-    credentials: 'include',
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ refresh_token: refreshToken }),
   });
 
   if (!response.ok) {
-    clearAccessToken();
+    handleAuthFailure();
     throw new Error(
       `Token refresh failed with status ${response.status}`
     );
@@ -43,14 +91,12 @@ export const refreshAccessToken = async () => {
         data.token;
 
   if (!newAccessToken) {
-    clearAccessToken();
+    handleAuthFailure();
     throw new Error('Access token not found in refresh response');
   }
 
-  // Store access token in memory
+  // Store access token in memory only
   setAccessToken(newAccessToken);
-
-  console.log('Access token obtained successfully');
 
   return newAccessToken;
 };
@@ -58,7 +104,10 @@ export const refreshAccessToken = async () => {
 
 // ==========================================
 // CENTRAL API FETCH
+// Adds Authorization header, handles 401 with
+// one refresh attempt. Never retries recursively.
 // ==========================================
+
 export const apiFetch = async (
   endpoint,
   options = {},
@@ -73,9 +122,8 @@ export const apiFetch = async (
     ...(options.headers || {}),
   };
 
-  // Get access token from memory
+  // Attach access token from memory
   const currentToken = getAccessToken();
-
   if (currentToken) {
     headers['Authorization'] = `Bearer ${currentToken}`;
   }
@@ -83,14 +131,17 @@ export const apiFetch = async (
   const fetchOptions = {
     ...options,
     headers,
-    credentials: 'include',
+    // NOTE: credentials: 'include' intentionally removed.
+    // Refresh token is now sent manually via JSON body — no cookies required.
   };
 
   let response = await fetch(url, fetchOptions);
 
 
   // ==========================================
-  // ACCESS TOKEN EXPIRED
+  // 401 — attempt one token refresh, then retry
+  // The /api/auth/token endpoint itself is excluded
+  // from this interceptor (isRetry guard prevents loops)
   // ==========================================
   if (response.status === 401 && !isRetry) {
     try {
@@ -107,10 +158,9 @@ export const apiFetch = async (
       });
 
     } catch (error) {
-      console.error(
-        'Unable to refresh access token:',
-        error
-      );
+      // refreshAccessToken() already cleared all auth state.
+      // Surface the error so the caller can redirect to login.
+      throw error;
     }
   }
 

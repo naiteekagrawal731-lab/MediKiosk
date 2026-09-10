@@ -3,7 +3,6 @@ import { useNavigate } from 'react-router-dom';
 import { PageContainer } from '../components/PageContainer';
 import { loginAdmin } from '../services/adminApi';
 import { useAuth } from '../context/AuthContext';
-import { refreshAccessToken } from '../services/apiClient';
 
 export const AdminLoginPage = () => {
   const navigate = useNavigate();
@@ -31,20 +30,11 @@ export const AdminLoginPage = () => {
     try {
       const result = await loginAdmin({ username: username.trim(), password });
 
-      // Try to get access token from cookie
-      let accessToken = result.accessToken;
-      if (!accessToken) {
-        try {
-          accessToken = await refreshAccessToken();
-        } catch (e) {
-          console.warn('Token refresh fallback after admin login:', e);
-        }
-      }
-
       loginUser({
         role: 'MAIN_ADMIN',
         username: username.trim(),
-        accessToken,
+        accessToken: result.accessToken,
+        refreshToken: result.refreshToken,
       });
 
       navigate('/admin');

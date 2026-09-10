@@ -1,5 +1,12 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { setAccessToken, clearAccessToken, getAccessToken, apiFetch } from '../services/apiClient';
+import {
+  setAccessToken,
+  clearAccessToken,
+  getAccessToken,
+  storeRefreshToken,
+  clearRefreshToken,
+  apiFetch,
+} from '../services/apiClient';
 
 const AuthContext = createContext();
 
@@ -31,27 +38,46 @@ export const AuthProvider = ({ children }) => {
 
   const [loading, setLoading] = useState(false);
 
-  // Sync token to apiClient state on init or update
+  // Sync access token to apiClient state on init or update
   useEffect(() => {
     if (authState.accessToken) {
       setAccessToken(authState.accessToken);
     }
   }, [authState.accessToken]);
 
-  const loginUser = ({ role, username, accessToken }) => {
+  /**
+   * Call after a successful login.
+   * Stores refresh token in sessionStorage and access token in memory + sessionStorage.
+   *
+   * @param {{ role: string, username: string, accessToken: string, refreshToken?: string }} param
+   */
+  const loginUser = ({ role, username, accessToken, refreshToken }) => {
+    // Store the refresh token in sessionStorage for future access-token requests
+    if (refreshToken) {
+      storeRefreshToken(refreshToken);
+    }
+
+    const resolvedToken = accessToken || getAccessToken();
+
     const nextState = {
       isAuthenticated: true,
       user: { username },
       role,
-      accessToken: accessToken || getAccessToken(),
+      accessToken: resolvedToken,
     };
-    setAccessToken(nextState.accessToken);
+
+    setAccessToken(resolvedToken);
     setAuthState(nextState);
     sessionStorage.setItem('medikiosk_auth_state', JSON.stringify(nextState));
   };
 
+  /**
+   * Clears all authentication state.
+   * Does NOT touch localStorage (device registration number is preserved).
+   */
   const logoutUser = () => {
     clearAccessToken();
+    clearRefreshToken();
     setAuthState({
       isAuthenticated: false,
       user: null,
