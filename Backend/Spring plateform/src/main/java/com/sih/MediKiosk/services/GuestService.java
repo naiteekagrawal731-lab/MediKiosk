@@ -35,7 +35,7 @@ public class GuestService {
         // a clear 400 error rather than a NullPointerException.
         String regNum = request.getRegistrationNumber();
 
-        
+
 
         if (regNum == null || regNum.isBlank()) {
             log.warn("Guest login rejected: registrationNumber is null or blank");
