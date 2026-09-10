@@ -29,6 +29,128 @@ GEMINI_MODELS = [
     "gemini-3.6-flash",
 ]
 
+MAX_ATTEMPTS_PER_MODEL = 4 
+
+def generate_summary_with_fallback(
+    prompt,
+    required_fields,
+    expected_treatment_type,
+    summary_name,
+):
+    last_error = None
+
+    for model_name in GEMINI_MODELS:
+
+        for attempt in range(1, MAX_ATTEMPTS_PER_MODEL + 1):
+
+            try:
+                logger.info(
+                    "Gemini summary request | summary=%s | model=%s | attempt=%d/3",
+                    summary_name,
+                    model_name,
+                    attempt,
+                )
+
+                response = client.models.generate_content(
+                    model=model_name,
+                    contents=prompt,
+                    config=types.GenerateContentConfig(
+                        temperature=0.1,
+                        response_mime_type="application/json",
+                    ),
+                )
+
+                # --------------------------------
+                # Check empty response
+                # --------------------------------
+
+                if not response.text:
+                    raise ValueError(
+                        f"Gemini returned an empty {summary_name} summary."
+                    )
+
+                # --------------------------------
+                # Parse JSON
+                # --------------------------------
+
+                try:
+                    summary = json.loads(response.text)
+
+                except json.JSONDecodeError as e:
+                    raise ValueError(
+                        f"Gemini returned invalid JSON: {str(e)}"
+                    )
+
+                # --------------------------------
+                # Validate treatment type
+                # --------------------------------
+
+                if summary.get("treatment_type") != expected_treatment_type:
+                    raise ValueError(
+                        "Gemini returned an invalid treatment_type."
+                    )
+
+                # --------------------------------
+                # Validate required fields
+                # --------------------------------
+
+                missing_fields = [
+                    field
+                    for field in required_fields
+                    if field not in summary
+                ]
+
+                if missing_fields:
+                    raise ValueError(
+                        f"Gemini response missing fields: {missing_fields}"
+                    )
+
+                # --------------------------------
+                # SUCCESS
+                # --------------------------------
+
+                logger.info(
+                    "Gemini summary SUCCESS | summary=%s | model=%s | attempt=%d/3",
+                    summary_name,
+                    model_name,
+                    attempt,
+                )
+
+                return summary
+
+            except Exception as e:
+
+                last_error = e
+
+                logger.exception(
+                    "GEMINI SUMMARY ERROR | summary=%s | model=%s | attempt=%d/3",
+                    summary_name,
+                    model_name,
+                    attempt,
+                )
+
+                # Wait before retry
+                if attempt < MAX_ATTEMPTS_PER_MODEL:
+                    time.sleep(2)
+
+        # --------------------------------
+        # Current model completely failed
+        # --------------------------------
+
+        logger.error(
+            "Gemini model FAILED completely | summary=%s | model=%s | switching to fallback model",
+            summary_name,
+            model_name,
+        )
+
+    # --------------------------------
+    # ALL MODELS FAILED
+    # --------------------------------
+
+    raise RuntimeError(
+        f"All Gemini models failed while generating {summary_name} summary."
+    ) from last_error
+
 def generate_with_fallback(prompt, response_schema):
     last_error = None
 
@@ -2974,6 +3096,44 @@ IMPORTANT OUTPUT RULES:
     )
 
 
+ALLOPATHIC_SUMMARY_FIELDS = [
+    "treatment_type",
+    "overall_summary",
+    "main_complaint",
+    "symptoms",
+    "past_medical_history",
+    "past_surgical_history",
+    "medications",
+    "allergies",
+    "family_history",
+    "lifestyle_and_habits",
+    "additional_notes",
+    "red_flags",
+]
+
+AYUSH_SUMMARY_FIELDS = [
+        "treatment_type",
+        "overall_summary",
+        "main_complaint",
+        "symptoms",
+        "prakriti",
+        "vikriti",
+        "sara",
+        "samhanana",
+        "pramana",
+        "satmya",
+        "sattva",
+        "ahara_shakti",
+        "vyayama_shakti",
+        "vaya",
+        "agni",
+        "koshtha",
+        "ahara_vihara",
+        "nidana",
+        "samprapti",
+        "additional_notes",
+]
+
 def generate_allopathic_summary(data, language="EN"):
     """
     Generate a concise Allopathic frontend-ready clinical summary.
@@ -3483,62 +3643,13 @@ Generate the final Allopathic summary.
 
 Return ONLY valid JSON. (it should be in english even if data is in hindi)
 """
-
-    response = client.models.generate_content(
-        model=MODEL_NAME,
-        contents=prompt,
-        config=types.GenerateContentConfig(
-            temperature=0.1,
-            response_mime_type="application/json",
-        ),
+    return generate_summary_with_fallback(
+        prompt=prompt,
+        required_fields=ALLOPATHIC_SUMMARY_FIELDS,
+        expected_treatment_type="ALLOPATHIC",
+        summary_name="Allopathic",
     )
-
-    if not response.text:
-        raise ValueError("Gemini returned an empty Allopathic summary.")
-
-    try:
-        summary = json.loads(response.text)
-    except json.JSONDecodeError as e:
-        raise ValueError(
-            f"Gemini returned invalid JSON: {str(e)}"
-        )
-
-    if summary.get("treatment_type") != "ALLOPATHIC":
-        raise ValueError(
-            "Gemini returned an invalid treatment_type."
-        )
-
-    if "allopathic_summary" in summary:
-        raise ValueError(
-            "Unexpected allopathic_summary wrapper returned."
-        )
-
-    required_fields = [
-        "treatment_type",
-        "overall_summary",
-        "main_complaint",
-        "symptoms",
-        "past_medical_history",
-        "past_surgical_history",
-        "medications",
-        "allergies",
-        "family_history",
-        "lifestyle_and_habits",
-        "additional_notes",
-        "red_flags",
-    ]
-
-    missing_fields = [
-        field for field in required_fields
-        if field not in summary
-    ]
-
-    if missing_fields:
-        raise ValueError(
-            f"Gemini response missing fields: {missing_fields}"
-        )
-
-    return summary
+    
 
 
 def generate_ayush_summary(data, language="EN"):
@@ -4252,64 +4363,12 @@ Generate the final AYUSH summary now.
 Return ONLY valid JSON. (it should be in english even if data is in hindi)
 """
 
-    response = client.models.generate_content(
-        model=MODEL_NAME,
-        contents=prompt,
-        config=types.GenerateContentConfig(
-            temperature=0.1,
-            response_mime_type="application/json",
-        ),
+    return generate_summary_with_fallback(
+        prompt=prompt,
+        required_fields=AYUSH_SUMMARY_FIELDS,
+        expected_treatment_type="AYUSH",
+        summary_name="AYUSH",
     )
-
-    if not response.text:
-        raise ValueError("Gemini returned an empty AYUSH summary.")
-
-    try:
-        summary = json.loads(response.text)
-    except json.JSONDecodeError as e:
-        raise ValueError(
-            f"Gemini returned invalid JSON: {str(e)}"
-        )
-
-    if summary.get("treatment_type") != "AYUSH":
-        raise ValueError(
-            "Gemini returned an invalid treatment_type."
-        )
-
-    required_fields = [
-        "treatment_type",
-        "overall_summary",
-        "main_complaint",
-        "symptoms",
-        "prakriti",
-        "vikriti",
-        "sara",
-        "samhanana",
-        "pramana",
-        "satmya",
-        "sattva",
-        "ahara_shakti",
-        "vyayama_shakti",
-        "vaya",
-        "agni",
-        "koshtha",
-        "ahara_vihara",
-        "nidana",
-        "samprapti",
-        "additional_notes",
-    ]
-
-    missing_fields = [
-        field for field in required_fields
-        if field not in summary
-    ]
-
-    if missing_fields:
-        raise ValueError(
-            f"Gemini response missing fields: {missing_fields}"
-        )
-
-    return summary
 
 
 # {
