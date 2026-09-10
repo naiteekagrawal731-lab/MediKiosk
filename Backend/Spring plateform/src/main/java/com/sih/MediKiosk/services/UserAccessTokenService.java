@@ -6,6 +6,7 @@ import com.sih.MediKiosk.exceptions.InvalidToken;
 import com.sih.MediKiosk.models.User;
 import com.sih.MediKiosk.security.jwt.JwtService;
 import com.sih.MediKiosk.security.user.AppUserDetailsService;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Service;
@@ -13,6 +14,7 @@ import org.springframework.stereotype.Service;
 import java.util.UUID;
 
 @Service
+@Slf4j
 public class UserAccessTokenService {
 
     private final JwtService jwtService;
@@ -28,6 +30,7 @@ public class UserAccessTokenService {
     }
 
     public ResponseEntity<AccessTokenResponse> getAccessToken(UUID refreshToken) {
+        log.info("Refresh token valid = "+refreshTokenService.isRefreshTokenValid(refreshToken));
         if (refreshTokenService.isRefreshTokenValid(refreshToken)) {
             User user = refreshTokenService.getUserByRefreshToken(refreshToken);
             UserDetails userDetails = userDetailsService.loadUserByUsername(user.getUsername());
