@@ -1612,20 +1612,44 @@ another relevant missing question or move to additional_information.
 Return ONLY the final valid JSON.
 """
 
-    response = client.models.generate_content(
-        model=MODEL_NAME,
-        contents=prompt,
-        config=types.GenerateContentConfig(
-            response_mime_type="application/json",
-            response_schema=ALLOPATHIC_RESPONSE_SCHEMA,
-            temperature=0.2,
-        ),
-    )
+    import json
+    import time
 
-    if hasattr(response, "parsed") and response.parsed:
-        return response.parsed
+    MAX_RETRIES = 3
 
-    return json.loads(response.text)
+    for attempt in range(MAX_RETRIES):
+        try:
+            response = client.models.generate_content(
+                model=MODEL_NAME,
+                contents=prompt,
+                config=types.GenerateContentConfig(
+                    response_mime_type="application/json",
+                    response_schema=ALLOPATHIC_RESPONSE_SCHEMA,
+                    temperature=0.2,
+                ),
+            )
+
+            # Preferred: parsed response
+            if hasattr(response, "parsed") and response.parsed:
+                return response.parsed
+
+            # Fallback: raw JSON
+            if hasattr(response, "text") and response.text:
+                return json.loads(response.text)
+
+            raise ValueError("Gemini returned an empty response")
+
+        except Exception as e:
+            print(f"Gemini attempt {attempt + 1}/{MAX_RETRIES} failed: {e}")
+
+            # If this was the third attempt, raise the error
+            if attempt == MAX_RETRIES - 1:
+                raise RuntimeError(
+                    "Gemini request failed after 3 attempts"
+                ) from e
+
+            # Small delay before retry
+            time.sleep(1)
 
 
 # ============================================================
@@ -2908,20 +2932,44 @@ IMPORTANT OUTPUT RULES:
 - Do NOT return explanations.
 - Do NOT return additional top-level keys.
 """
-    response = client.models.generate_content(
-        model=MODEL_NAME,
-        contents=prompt,
-        config=types.GenerateContentConfig(
-            response_mime_type="application/json",
-            response_schema=AYUSH_RESPONSE_SCHEMA,
-            temperature=0.2,
-        ),
-    )
+    import json
+    import time
+    
+    MAX_RETRIES = 3
 
-    if hasattr(response, "parsed") and response.parsed:
-        return response.parsed
+    for attempt in range(MAX_RETRIES):
+        try:
+            response = client.models.generate_content(
+                model=MODEL_NAME,
+                contents=prompt,
+                config=types.GenerateContentConfig(
+                    response_mime_type="application/json",
+                    response_schema=AYUSH_RESPONSE_SCHEMA,
+                    temperature=0.2,
+                ),
+            )
 
-    return json.loads(response.text)
+            # Preferred: parsed response
+            if hasattr(response, "parsed") and response.parsed:
+                return response.parsed
+
+            # Fallback: raw JSON
+            if hasattr(response, "text") and response.text:
+                return json.loads(response.text)
+
+            raise ValueError("Gemini returned an empty response")
+
+        except Exception as e:
+            print(f"Gemini attempt {attempt + 1}/{MAX_RETRIES} failed: {e}")
+
+            # If this was the third attempt, raise the error
+            if attempt == MAX_RETRIES - 1:
+                raise RuntimeError(
+                    "Gemini request failed after 3 attempts"
+                ) from e
+
+            # Small delay before retry
+            time.sleep(1)
 
 
 def generate_allopathic_summary(data, language="EN"):
