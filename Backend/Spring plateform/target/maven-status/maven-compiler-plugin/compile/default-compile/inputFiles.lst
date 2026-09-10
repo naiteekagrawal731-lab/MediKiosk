@@ -15,6 +15,7 @@ D:\MediKiosk\Backend\Spring plateform\src\main\java\com\sih\MediKiosk\dtos\reque
 D:\MediKiosk\Backend\Spring plateform\src\main\java\com\sih\MediKiosk\dtos\requestDtos\CreateDoctorRequest.java
 D:\MediKiosk\Backend\Spring plateform\src\main\java\com\sih\MediKiosk\dtos\requestDtos\CreateHospitalRequest.java
 D:\MediKiosk\Backend\Spring plateform\src\main\java\com\sih\MediKiosk\dtos\requestDtos\CreatePatientRequest.java
+D:\MediKiosk\Backend\Spring plateform\src\main\java\com\sih\MediKiosk\dtos\requestDtos\GetAccessTokenReq.java
 D:\MediKiosk\Backend\Spring plateform\src\main\java\com\sih\MediKiosk\dtos\requestDtos\GetSessionRequest.java
 D:\MediKiosk\Backend\Spring plateform\src\main\java\com\sih\MediKiosk\dtos\requestDtos\GuestLoginRequest.java
 D:\MediKiosk\Backend\Spring plateform\src\main\java\com\sih\MediKiosk\dtos\requestDtos\LoginRequest.java
@@ -25,7 +26,9 @@ D:\MediKiosk\Backend\Spring plateform\src\main\java\com\sih\MediKiosk\dtos\respo
 D:\MediKiosk\Backend\Spring plateform\src\main\java\com\sih\MediKiosk\dtos\responseDtos\ClinicalSessionDto.java
 D:\MediKiosk\Backend\Spring plateform\src\main\java\com\sih\MediKiosk\dtos\responseDtos\ClinicalSessionSummaryDto.java
 D:\MediKiosk\Backend\Spring plateform\src\main\java\com\sih\MediKiosk\dtos\responseDtos\CreateSessionResponse.java
+D:\MediKiosk\Backend\Spring plateform\src\main\java\com\sih\MediKiosk\dtos\responseDtos\DjangoClinicalSessionResponse.java
 D:\MediKiosk\Backend\Spring plateform\src\main\java\com\sih\MediKiosk\dtos\responseDtos\GuestLoginResponse.java
+D:\MediKiosk\Backend\Spring plateform\src\main\java\com\sih\MediKiosk\dtos\responseDtos\LoginResponse.java
 D:\MediKiosk\Backend\Spring plateform\src\main\java\com\sih\MediKiosk\dtos\responseDtos\RegistrationNumberResponse.java
 D:\MediKiosk\Backend\Spring plateform\src\main\java\com\sih\MediKiosk\dtos\responseDtos\RegistrationResponse.java
 D:\MediKiosk\Backend\Spring plateform\src\main\java\com\sih\MediKiosk\dtos\responseDtos\ResponseMessage.java

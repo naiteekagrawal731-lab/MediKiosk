@@ -19,7 +19,7 @@ spring:
       mode: always
 
 server:
-  port: ${PORT:10000}
+  port: ${PORT:8080}
   address: 0.0.0.0
 
 django:
