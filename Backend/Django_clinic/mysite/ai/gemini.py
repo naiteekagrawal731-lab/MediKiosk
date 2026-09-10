@@ -1499,14 +1499,14 @@ Patient:
 
 Return:
 
-{
-    "extracted_info": {},
-    "next_ques": {
+{{
+    "extracted_info": {{}},
+    "next_ques": {{
         "question_key": "last_question",
         "question_text": "",
         "button_options": []
-    }
-}
+    }}
+}}
 
 ============================================================
 LAST QUESTION
