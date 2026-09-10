@@ -1,6 +1,6 @@
 import { apiFetch } from './apiClient';
 
-const DJANGO_API_URL = import.meta.env.VITE_DJANGO_API_URL || 'http://localhost:8000';
+const DJANGO_API_URL = import.meta.env.VITE_DJANGO_API_URL || 'https://medikiosk-7f7g.onrender.com';
 
 /**
  * Fetch patient clinical session summary for Doctor

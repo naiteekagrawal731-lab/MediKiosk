@@ -1,5 +1,5 @@
 const SPRING_API_URL =
-  import.meta.env.VITE_SPRING_API_URL || 'http://localhost:8080';
+  import.meta.env.VITE_SPRING_API_URL || 'https://medikiosk-mmys.onrender.com';
 
 let accessToken = null;
 
