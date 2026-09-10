@@ -1,6 +1,6 @@
 import os
 import json
-
+import time
 from dotenv import load_dotenv
 from google import genai
 from google.genai import types
@@ -1612,9 +1612,6 @@ another relevant missing question or move to additional_information.
 Return ONLY the final valid JSON.
 """
 
-    import json
-    import time
-
     MAX_RETRIES = 3
 
     for attempt in range(MAX_RETRIES):
@@ -2932,8 +2929,6 @@ IMPORTANT OUTPUT RULES:
 - Do NOT return explanations.
 - Do NOT return additional top-level keys.
 """
-    import json
-    import time
     
     MAX_RETRIES = 3
 
