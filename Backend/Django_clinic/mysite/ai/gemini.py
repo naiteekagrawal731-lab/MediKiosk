@@ -2934,7 +2934,7 @@ IMPORTANT OUTPUT RULES:
 - Do NOT return additional top-level keys.
 """
     
-    MAX_RETRIES = 3
+    MAX_RETRIES = 5
 
     for attempt in range(3):
         try:
