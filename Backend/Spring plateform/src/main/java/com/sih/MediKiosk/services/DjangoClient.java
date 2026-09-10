@@ -23,7 +23,7 @@ public class DjangoClient {
                       @Value("${django.api.key}") String apiKey) {
 
         this.webClient = builder
-                .baseUrl("http://localhost:8000")
+                .baseUrl("https://medikiosk-7f7g.onrender.com")
                 .defaultHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
                 .defaultHeader("API-KEY", apiKey)
                 .build();
