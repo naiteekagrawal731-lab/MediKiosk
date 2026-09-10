@@ -1628,16 +1628,29 @@ Return ONLY the final valid JSON.
                 ),
             )
 
-            return response
+            logger.info(
+                "Gemini request successful on attempt %d/3",
+                attempt + 1
+            )
+
+            if response.parsed:
+                return response.parsed
+
+            if response.text:
+                return json.loads(response.text)
+
+            raise ValueError("Gemini returned an empty response")
 
         except Exception as e:
             logger.exception(
-                "GEMINI API ERROR - Attempt %d/3",
+                "GEMINI ERROR - attempt %d/3",
                 attempt + 1
             )
 
             if attempt == 2:
                 raise
+
+            time.sleep(1)
 
 
 # ============================================================
@@ -2923,7 +2936,7 @@ IMPORTANT OUTPUT RULES:
     
     MAX_RETRIES = 3
 
-    for attempt in range(MAX_RETRIES):
+    for attempt in range(3):
         try:
             response = client.models.generate_content(
                 model=MODEL_NAME,
@@ -2935,26 +2948,28 @@ IMPORTANT OUTPUT RULES:
                 ),
             )
 
-            # Preferred: parsed response
-            if hasattr(response, "parsed") and response.parsed:
+            logger.info(
+                "Gemini request successful on attempt %d/3",
+                attempt + 1
+            )
+
+            if response.parsed:
                 return response.parsed
 
-            # Fallback: raw JSON
-            if hasattr(response, "text") and response.text:
+            if response.text:
                 return json.loads(response.text)
 
             raise ValueError("Gemini returned an empty response")
 
         except Exception as e:
-            print(f"Gemini attempt {attempt + 1}/{MAX_RETRIES} failed: {e}")
+            logger.exception(
+                "GEMINI ERROR - attempt %d/3",
+                attempt + 1
+            )
 
-            # If this was the third attempt, raise the error
-            if attempt == MAX_RETRIES - 1:
-                raise RuntimeError(
-                    "Gemini request failed after 3 attempts"
-                ) from e
+            if attempt == 2:
+                raise
 
-            # Small delay before retry
             time.sleep(1)
 
 
