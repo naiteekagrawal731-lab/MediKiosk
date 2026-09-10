@@ -58,9 +58,9 @@ export const RegisterPage = () => {
     if (view === 'choice') {
       speak(t.existingPatientQuestion || 'Please select your patient registration option.', lang, { volume: customVol, isMuted: customMuted });
     } else if (view === 'guest') {
-      speak(t.guest || 'Please enter your guest registration details.', lang, { volume: customVol, isMuted: customMuted });
+      speak(t.guestRegistrationNotice || 'Please enter your guest registration details.', lang, { volume: customVol, isMuted: customMuted });
     } else if (view === 'login') {
-      speak('Please enter your username and password to log in.', lang, { volume: customVol, isMuted: customMuted });
+      speak(lang === 'HI' ? 'कृपया अपना यूजरनेम और पासवर्ड डालकर लॉगिन करें।' : 'Please enter your username and password to log in.', lang, { volume: customVol, isMuted: customMuted });
     }
   };
 
@@ -97,19 +97,19 @@ export const RegisterPage = () => {
     setErrorMsg('');
 
     if (!guestForm.username.trim()) {
-      setErrorMsg('Name / Username is required.');
+      setErrorMsg(lang === 'HI' ? 'नाम लिखना आवश्यक है।' : 'Name / Username is required.');
       return;
     }
     if (!guestForm.gender) {
-      setErrorMsg('Please select your gender.');
+      setErrorMsg(lang === 'HI' ? 'कृपया अपना लिंग चुनें।' : 'Please select your gender.');
       return;
     }
     if (!guestForm.dateOfBirth) {
-      setErrorMsg('Date of birth is required.');
+      setErrorMsg(lang === 'HI' ? 'जन्म तिथि आवश्यक है।' : 'Date of birth is required.');
       return;
     }
     if (!guestForm.phoneNumber.trim()) {
-      setErrorMsg('Phone number is required.');
+      setErrorMsg(lang === 'HI' ? 'मोबाइल नंबर आवश्यक है।' : 'Phone number is required.');
       return;
     }
 
@@ -130,7 +130,7 @@ export const RegisterPage = () => {
       navigate(`/session/${newSessionId}/treatment`);
     } catch (err) {
       console.error('Guest registration error:', err);
-      setErrorMsg(err.message || 'Guest registration failed. Please try again.');
+      setErrorMsg(err.message || (lang === 'HI' ? 'पंजीकरण विफल रहा। कृपया पुनः प्रयास करें।' : 'Guest registration failed. Please try again.'));
     } finally {
       setLoading(false);
     }
@@ -142,11 +142,11 @@ export const RegisterPage = () => {
     setErrorMsg('');
 
     if (!loginForm.username.trim()) {
-      setErrorMsg('Username is required.');
+      setErrorMsg(lang === 'HI' ? 'यूजरनेम आवश्यक है।' : 'Username is required.');
       return;
     }
     if (!loginForm.password.trim()) {
-      setErrorMsg('Password is required.');
+      setErrorMsg(lang === 'HI' ? 'पासवर्ड आवश्यक है।' : 'Password is required.');
       return;
     }
 
@@ -171,7 +171,7 @@ export const RegisterPage = () => {
       navigate(`/session/${newSessionId}/treatment`);
     } catch (err) {
       console.error('Patient login error:', err);
-      setErrorMsg(err.message || 'Login failed. Please check username and password.');
+      setErrorMsg(err.message || (lang === 'HI' ? 'लॉगिन विफल रहा। कृपया यूजरनेम और पासवर्ड जांचें।' : 'Login failed. Please check username and password.'));
     } finally {
       setLoading(false);
     }
@@ -193,7 +193,7 @@ export const RegisterPage = () => {
             <div className="kiosk-question-header-row">
               <SpeakerButton onClick={() => playSpeech()} />
               <h1 className="kiosk-question-text" style={{ fontSize: '1.8rem' }}>
-                {t.guest || 'Guest Registration'}
+                {t.guestRegistrationTitle || t.guest || 'Guest Registration'}
               </h1>
             </div>
 
@@ -209,11 +209,11 @@ export const RegisterPage = () => {
             <form onSubmit={handleGuestSubmit} className="kiosk-registration-form">
               <div className="form-grid-2col">
                 <div className="kiosk-field-group col-span-2">
-                  <label className="kiosk-field-label">Full Name / Username *</label>
+                  <label className="kiosk-field-label">{t.fullNameLabel || 'Full Name / Username *'}</label>
                   <input 
                     type="text" 
                     required 
-                    placeholder="Enter your name"
+                    placeholder={t.fullNamePlaceholder || 'Enter your name'}
                     value={guestForm.username}
                     onChange={(e) => setGuestForm({ ...guestForm, username: e.target.value })}
                     className="kiosk-form-input" 
@@ -221,24 +221,28 @@ export const RegisterPage = () => {
                 </div>
 
                 <div className="kiosk-field-group col-span-2">
-                  <label className="kiosk-field-label">Gender *</label>
+                  <label className="kiosk-field-label">{t.genderLabel || 'Gender *'}</label>
                   <div className="gender-selector-grid">
-                    {['Male', 'Female', 'Other'].map((g) => (
+                    {[
+                      { key: 'Male', label: t.male || 'Male', icon: '👨' },
+                      { key: 'Female', label: t.female || 'Female', icon: '👩' },
+                      { key: 'Other', label: t.otherGender || 'Other', icon: '🧑' }
+                    ].map((g) => (
                       <button 
-                        key={g}
+                        key={g.key}
                         type="button"
-                        onClick={() => setGuestForm({ ...guestForm, gender: g })}
-                        className={`gender-btn ${guestForm.gender === g ? 'active' : ''}`}
+                        onClick={() => setGuestForm({ ...guestForm, gender: g.key })}
+                        className={`gender-btn ${guestForm.gender === g.key ? 'active' : ''}`}
                       >
-                        <span>{g === 'Male' ? '👨' : g === 'Female' ? '👩' : '🧑'}</span>
-                        <span>{g}</span>
+                        <span>{g.icon}</span>
+                        <span>{g.label}</span>
                       </button>
                     ))}
                   </div>
                 </div>
 
                 <div className="kiosk-field-group">
-                  <label className="kiosk-field-label">Date of Birth *</label>
+                  <label className="kiosk-field-label">{t.dobLabel || 'Date of Birth *'}</label>
                   <input 
                     type="date" 
                     required
@@ -249,11 +253,11 @@ export const RegisterPage = () => {
                 </div>
 
                 <div className="kiosk-field-group">
-                  <label className="kiosk-field-label">Phone Number *</label>
+                  <label className="kiosk-field-label">{t.mobileLabel || 'Phone Number *'}</label>
                   <input 
                     type="tel" 
                     required
-                    placeholder="10-digit mobile number"
+                    placeholder={t.mobilePlaceholder || '10-digit mobile number'}
                     value={guestForm.phoneNumber}
                     onChange={(e) => setGuestForm({ ...guestForm, phoneNumber: e.target.value })}
                     className="kiosk-form-input" 
@@ -261,13 +265,13 @@ export const RegisterPage = () => {
                 </div>
 
                 <div className="kiosk-field-group col-span-2">
-                  <label className="kiosk-field-label">Blood Group (Optional)</label>
+                  <label className="kiosk-field-label">{t.bloodGroupLabel || 'Blood Group (Optional)'}</label>
                   <select 
                     value={guestForm.bloodGroup}
                     onChange={(e) => setGuestForm({ ...guestForm, bloodGroup: e.target.value })}
                     className="kiosk-form-select"
                   >
-                    <option value="">Select Blood Group...</option>
+                    <option value="">{t.selectBloodGroup || 'Select Blood Group...'}</option>
                     {['A+', 'A-', 'B+', 'B-', 'O+', 'O-', 'AB+', 'AB-'].map((bg) => (
                       <option key={bg} value={bg}>{bg}</option>
                     ))}
@@ -294,7 +298,7 @@ export const RegisterPage = () => {
                   disabled={loading} 
                   className="kiosk-submit-btn"
                 >
-                  {loading ? 'Submitting...' : t.continueBtn || 'Continue →'}
+                  {loading ? (t.submitting || 'Submitting...') : (t.continueBtn || 'Continue →')}
                 </button>
               </div>
             </form>
@@ -320,7 +324,7 @@ export const RegisterPage = () => {
             <div className="kiosk-question-header-row">
               <SpeakerButton onClick={() => playSpeech()} />
               <h1 className="kiosk-question-text" style={{ fontSize: '1.8rem' }}>
-                Patient Account Login
+                {t.loginTitle || 'Patient Account Login'}
               </h1>
             </div>
 
@@ -332,11 +336,11 @@ export const RegisterPage = () => {
 
             <form onSubmit={handleLoginSubmit} className="kiosk-registration-form" style={{ marginTop: '1.5rem', width: '100%' }}>
               <div className="kiosk-field-group" style={{ marginBottom: '1.25rem' }}>
-                <label className="kiosk-field-label">Username *</label>
+                <label className="kiosk-field-label">{t.usernameLabel || 'Username *'}</label>
                 <input 
                   type="text"
                   required
-                  placeholder="Enter patient username"
+                  placeholder={t.usernamePlaceholder || 'Enter patient username'}
                   value={loginForm.username}
                   onChange={(e) => setLoginForm({ ...loginForm, username: e.target.value })}
                   className="kiosk-form-input"
@@ -344,11 +348,11 @@ export const RegisterPage = () => {
               </div>
 
               <div className="kiosk-field-group" style={{ marginBottom: '1.5rem' }}>
-                <label className="kiosk-field-label">Password *</label>
+                <label className="kiosk-field-label">{t.passwordLabel || 'Password *'}</label>
                 <input 
                   type="password"
                   required
-                  placeholder="Enter password"
+                  placeholder={t.passwordPlaceholder || 'Enter password'}
                   value={loginForm.password}
                   onChange={(e) => setLoginForm({ ...loginForm, password: e.target.value })}
                   className="kiosk-form-input"
@@ -368,7 +372,7 @@ export const RegisterPage = () => {
                   disabled={loading} 
                   className="kiosk-submit-btn"
                 >
-                  {loading ? 'Logging in...' : 'Login & Continue →'}
+                  {loading ? (t.loggingIn || 'Logging in...') : (t.loginBtn || 'Login & Continue →')}
                 </button>
               </div>
             </form>
@@ -413,7 +417,7 @@ export const RegisterPage = () => {
               className="kiosk-option-card"
               style={{ padding: '1.25rem', fontSize: '1.35rem' }}
             >
-              👤 Existing Patient Login
+              👤 {t.existingPatientLogin || 'Existing Patient Login'}
             </button>
 
             <button 
@@ -422,7 +426,7 @@ export const RegisterPage = () => {
               className="kiosk-option-card selected"
               style={{ padding: '1.25rem', fontSize: '1.35rem' }}
             >
-              📝 Continue as Guest
+              📝 {t.guest || 'Continue as Guest'}
             </button>
           </div>
 

@@ -114,7 +114,7 @@ export const TreatmentPage = () => {
               className="kiosk-option-card selected"
               style={{ padding: '1.5rem', fontSize: '1.5rem' }}
             >
-              🌿 {loading ? 'Please wait...' : t.ayush}
+              🌿 {loading ? (t.pleaseWait || 'Please wait...') : t.ayush}
             </button>
             <button 
               type="button"
@@ -123,7 +123,7 @@ export const TreatmentPage = () => {
               className="kiosk-option-card"
               style={{ padding: '1.5rem', fontSize: '1.5rem' }}
             >
-              💊 {loading ? 'Please wait...' : t.allopathic}
+              💊 {loading ? (t.pleaseWait || 'Please wait...') : t.allopathic}
             </button>
           </div>
 
