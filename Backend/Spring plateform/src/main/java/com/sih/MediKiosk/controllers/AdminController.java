@@ -3,6 +3,7 @@ package com.sih.MediKiosk.controllers;
 import com.sih.MediKiosk.dtos.requestDtos.AdminUserCreationDto;
 import com.sih.MediKiosk.dtos.requestDtos.LoginRequest;
 import com.sih.MediKiosk.dtos.responseDtos.AdminDto;
+import com.sih.MediKiosk.dtos.responseDtos.LoginResponse;
 import com.sih.MediKiosk.services.UserService;
 import com.sih.MediKiosk.services.UsernamePasswordLoginService;
 import lombok.extern.slf4j.Slf4j;
@@ -37,7 +38,7 @@ public class AdminController {
         return userService.deleteAdmin(id);
     }
     @PostMapping("/login")
-    public ResponseEntity<?> login(@RequestBody LoginRequest request){
+    public ResponseEntity<LoginResponse> login(@RequestBody LoginRequest request){
         return usernamePasswordLoginService.login(request);
     }
 

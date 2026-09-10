@@ -2,6 +2,7 @@ package com.sih.MediKiosk.controllers;
 
 import com.sih.MediKiosk.dtos.requestDtos.CreateHospitalRequest;
 import com.sih.MediKiosk.dtos.requestDtos.LoginRequest;
+import com.sih.MediKiosk.dtos.responseDtos.LoginResponse;
 import com.sih.MediKiosk.dtos.responseDtos.RegistrationNumberResponse;
 import com.sih.MediKiosk.services.HospitalService;
 import com.sih.MediKiosk.services.UsernamePasswordLoginService;
@@ -32,7 +33,7 @@ public class HospitalController {
         return hospitalService.createNewHospital(request);
     }
     @PostMapping ("/login")
-    public ResponseEntity<?> login(@RequestBody LoginRequest request){
+    public ResponseEntity<LoginResponse> login(@RequestBody LoginRequest request){
         return usernamePasswordLoginService.login(request);
     }
 

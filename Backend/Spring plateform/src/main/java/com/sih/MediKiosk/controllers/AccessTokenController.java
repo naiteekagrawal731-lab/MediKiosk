@@ -1,6 +1,7 @@
 package com.sih.MediKiosk.controllers;
 
 
+import com.sih.MediKiosk.dtos.requestDtos.GetAccessTokenReq;
 import com.sih.MediKiosk.dtos.responseDtos.AccessTokenResponse;
 import com.sih.MediKiosk.exceptions.InvalidToken;
 import com.sih.MediKiosk.services.UserAccessTokenService;
@@ -9,6 +10,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -28,23 +30,8 @@ public class AccessTokenController {
     }
 
     @GetMapping
-    public ResponseEntity<AccessTokenResponse> getAccessToken(HttpServletRequest request) {
-        Cookie[] cookies = request.getCookies();
-        if (cookies == null) {
-            log.info("User cookies = null");
-            throw new InvalidToken("No cookies present — please log in first");
-        }
-        log.info("User cookies = {}", Arrays.toString(cookies));
-
-        Optional<Cookie> refreshToken = Arrays.stream(cookies)
-                .filter(c -> c.getName().equals("refresh_token"))
-                .findFirst();
-
-        if (refreshToken.isEmpty()) {
-            throw new InvalidToken("Refresh token is not present");
-        }
-
-        return userAccessTokenService.getAccessToken(UUID.fromString(refreshToken.get().getValue()));
+    public ResponseEntity<AccessTokenResponse> getAccessToken(@RequestBody GetAccessTokenReq req) {
+        return userAccessTokenService.getAccessToken(UUID.fromString(req.getRefresh_token()));
     }
 
 }

@@ -3,11 +3,13 @@ package com.sih.MediKiosk.services;
 
 import com.sih.MediKiosk.dtos.requestDtos.LoginRequest;
 import com.sih.MediKiosk.dtos.requestDtos.PatientLoginRequest;
+import com.sih.MediKiosk.dtos.responseDtos.LoginResponse;
 import com.sih.MediKiosk.exceptions.UsernameNotFound;
 import com.sih.MediKiosk.models.Patient;
 import com.sih.MediKiosk.models.User;
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletResponse;
+import lombok.extern.java.Log;
 import lombok.extern.slf4j.Slf4j;
 
 import org.springframework.http.HttpHeaders;
@@ -38,7 +40,7 @@ public class UsernamePasswordLoginService {
         this.hospitalService = hospitalService;
     }
 
-    public ResponseEntity<String> login(LoginRequest loginRequest) {
+    public ResponseEntity<LoginResponse> login(LoginRequest loginRequest) {
         String username = loginRequest.getUsername();
         String password = loginRequest.getPassword();
 
@@ -52,23 +54,14 @@ public class UsernamePasswordLoginService {
 
         log.info("Generating refresh token for user: {}", username);
         UUID refreshToken = userRefreshTokenService.generateRefreshToken(user);
-
-        org.springframework.http.ResponseCookie refreshTokenCookie = org.springframework.http.ResponseCookie
-                .from("refresh_token", String.valueOf(refreshToken))
-                .httpOnly(true)
-                .secure(false)
-                .path("/")
-                .maxAge(3600 * 24 * 30)
-                .sameSite("Lax")
-                .build();
-
-        response.addHeader(org.springframework.http.HttpHeaders.SET_COOKIE, refreshTokenCookie.toString());
 
         log.info("Login successful for user: {}", username);
-        return ResponseEntity.ok("Login Successful");
+        return ResponseEntity.ok().body(LoginResponse.builder()
+                        .refresh_token(String.valueOf(refreshToken))
+                .build());
 
     }
-    public ResponseEntity<String> login(PatientLoginRequest loginRequest) {
+    public ResponseEntity<LoginResponse> login(PatientLoginRequest loginRequest) {
         String username = loginRequest.getUsername();
         String password = loginRequest.getPassword();
 
@@ -83,15 +76,6 @@ public class UsernamePasswordLoginService {
         log.info("Generating refresh token for user: {}", username);
         UUID refreshToken = userRefreshTokenService.generateRefreshToken(user);
 
-        ResponseCookie cookie = ResponseCookie.from("refresh_token", String.valueOf(refreshToken))
-                .httpOnly(true)
-                .secure(true)
-                .sameSite("None")
-                .path("/")
-                .maxAge(Duration.ofDays(30))
-                .build();
-
-        response.addHeader(HttpHeaders.SET_COOKIE, cookie.toString());
 
         if(!loginRequest.getRegistrationNumber().equals(null)){
             Patient patient = patientService.getPatientByUser(user);
@@ -99,7 +83,9 @@ public class UsernamePasswordLoginService {
         }
 
         log.info("Login successful for user: {}", username);
-        return ResponseEntity.ok("Login Successful");
+        return ResponseEntity.ok().body(LoginResponse.builder()
+                        .refresh_token(String.valueOf(refreshToken))
+                .build());
 
     }
 }

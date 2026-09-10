@@ -4,6 +4,7 @@ import com.sih.MediKiosk.dtos.requestDtos.CreateDoctorRequest;
 import com.sih.MediKiosk.dtos.requestDtos.LoginRequest;
 import com.sih.MediKiosk.dtos.responseDtos.ClinicalSessionSummaryDto;
 import com.sih.MediKiosk.dtos.responseDtos.DjangoClinicalSessionResponse;
+import com.sih.MediKiosk.dtos.responseDtos.LoginResponse;
 import com.sih.MediKiosk.models.ClinicalSession;
 import com.sih.MediKiosk.services.DoctorService;
 import com.sih.MediKiosk.services.UsernamePasswordLoginService;
@@ -32,7 +33,7 @@ public class DoctorController {
     }
 
     @PostMapping("/login")
-    public ResponseEntity<?> login(@RequestBody LoginRequest request){
+    public ResponseEntity<LoginResponse> login(@RequestBody LoginRequest request){
         return usernamePasswordLoginService.login(request);
     }
 
