@@ -1,5 +1,5 @@
 const DJANGO_API_URL =
-  import.meta.env.VITE_DJANGO_API_URL || 'http://localhost:8000';
+  import.meta.env.VITE_DJANGO_API_URL || 'https://medikiosk-7f7g.onrender.com';
 
 export const createDjangoSession = async (sessionId) => {
   try {

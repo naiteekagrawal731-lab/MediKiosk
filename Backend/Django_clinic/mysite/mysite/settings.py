@@ -29,10 +29,12 @@ DEBUG = config("DEBUG", default=False, cast=bool)
 #     default="localhost,127.0.0.1"
 # ).split(",")
 
-ALLOWED_HOSTS = config(
-    "ALLOWED_HOSTS",
-    default="localhost,127.0.0.1"
-).split(",")
+# ALLOWED_HOSTS = config(
+#     "ALLOWED_HOSTS",
+#     default="localhost,127.0.0.1"
+# ).split(",")
+
+ALLOWED_HOSTS = ["*"]
 
 # Application definition 
 
@@ -165,14 +167,14 @@ MEDIA_ROOT = BASE_DIR / "media"
 SARVAM_API_KEY = config("SARVAM_API_KEY")
 GEMINI_API_KEY = config("GEMINI_API_KEY")
 
-# HTTPS
-SECURE_SSL_REDIRECT = True
-SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
+# # HTTPS
+# SECURE_SSL_REDIRECT = True
+# SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
 
-# Cookies
-SESSION_COOKIE_SECURE = True
-CSRF_COOKIE_SECURE = True
+# # Cookies
+# SESSION_COOKIE_SECURE = True
+# CSRF_COOKIE_SECURE = True
 
-# HSTS - enable after HTTPS is confirmed working
-SECURE_HSTS_SECONDS = 31536000
-SECURE_HSTS_INCLUDE_SUBDOMAINS = True
+# # HSTS - enable after HTTPS is confirmed working
+# SECURE_HSTS_SECONDS = 31536000
+# SECURE_HSTS_INCLUDE_SUBDOMAINS = True
