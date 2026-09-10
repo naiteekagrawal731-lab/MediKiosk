@@ -10,9 +10,12 @@ import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.extern.slf4j.Slf4j;
 
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.ResponseCookie;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 
+import java.time.Duration;
 import java.util.UUID;
 
 @Service
@@ -80,16 +83,15 @@ public class UsernamePasswordLoginService {
         log.info("Generating refresh token for user: {}", username);
         UUID refreshToken = userRefreshTokenService.generateRefreshToken(user);
 
-        org.springframework.http.ResponseCookie refreshTokenCookie = org.springframework.http.ResponseCookie
-                .from("refresh_token", String.valueOf(refreshToken))
+        ResponseCookie cookie = ResponseCookie.from("refresh_token", String.valueOf(refreshToken))
                 .httpOnly(true)
-                .secure(false)
+                .secure(true)
+                .sameSite("None")
                 .path("/")
-                .maxAge(3600 * 24 * 30)
-                .sameSite("Lax")
+                .maxAge(Duration.ofDays(30))
                 .build();
 
-        response.addHeader(org.springframework.http.HttpHeaders.SET_COOKIE, refreshTokenCookie.toString());
+        response.addHeader(HttpHeaders.SET_COOKIE, cookie.toString());
 
         if(!loginRequest.getRegistrationNumber().equals(null)){
             Patient patient = patientService.getPatientByUser(user);
