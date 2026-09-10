@@ -39,6 +39,7 @@ export const HospitalLoginPage = () => {
         role: 'HOSPITAL_ADMIN',
         username: hospitalName.trim(),
         accessToken: result.accessToken,
+        refreshToken: result.refreshToken,
       });
 
       navigate('/hospital/dashboard');

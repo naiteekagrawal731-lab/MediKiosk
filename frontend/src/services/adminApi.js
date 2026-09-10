@@ -1,30 +1,25 @@
-import { apiFetch } from './apiClient';
+import { apiFetch, storeRefreshToken, refreshAccessToken } from './apiClient';
 
 const SPRING_API_URL = import.meta.env.VITE_SPRING_API_URL || 'https://medikiosk-mmys.onrender.com';
 
 /**
  * Admin Login
- * GET/POST /admin/login
+ * POST /admin/login
  * Body: { username, password }
+ * Response: { "refresh_token": "..." }
+ *
+ * Reads refresh_token from JSON response, stores it, then exchanges
+ * it for an access token via POST /api/auth/token.
  */
 export const loginAdmin = async (credentials) => {
-  let response = await fetch(`${SPRING_API_URL}/admin/login`, {
+  const response = await fetch(`${SPRING_API_URL}/admin/login`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    credentials: 'include',
     body: JSON.stringify({
       username: credentials.username,
       password: credentials.password,
     }),
   });
-
-  if (response.status === 405) {
-    response = await fetch(`${SPRING_API_URL}/admin/login`, {
-      method: 'GET',
-      headers: { 'Content-Type': 'application/json' },
-      credentials: 'include',
-    });
-  }
 
   if (!response.ok) {
     let errorMsg = 'Admin login failed.';
@@ -38,16 +33,33 @@ export const loginAdmin = async (credentials) => {
     throw new Error(errorMsg);
   }
 
+  // Read the refresh token from the JSON response body
   let resData = {};
   try {
     resData = await response.json();
   } catch {
-    resData = { success: true };
+    resData = {};
+  }
+
+  const refreshToken = resData.refresh_token;
+
+  // Store the refresh token for future access-token requests
+  if (refreshToken) {
+    storeRefreshToken(refreshToken);
+  }
+
+  // Exchange the stored refresh token for an access token
+  let token = null;
+  try {
+    token = await refreshAccessToken();
+  } catch (err) {
+    throw new Error('Admin login succeeded but could not obtain access token: ' + err.message);
   }
 
   return {
     success: true,
-    accessToken: resData.accessToken || resData.token,
+    accessToken: token,
+    refreshToken,
     username: credentials.username,
   };
 };

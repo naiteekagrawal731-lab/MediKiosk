@@ -1,4 +1,4 @@
-import { apiFetch, refreshAccessToken } from './apiClient';
+import { apiFetch, storeRefreshToken, refreshAccessToken } from './apiClient';
 
 const SPRING_API_URL = import.meta.env.VITE_SPRING_API_URL || 'https://medikiosk-mmys.onrender.com';
 
@@ -44,27 +44,20 @@ export const createHospital = async (hospitalData) => {
  * Hospital Admin: Login
  * POST /hospital/login
  * Body: { username, password } (Note: "Hospital Name" input mapped to "username")
+ * Response: { "refresh_token": "..." }
+ *
+ * Reads refresh_token from JSON response, stores it, then exchanges
+ * it for an access token via POST /api/auth/token.
  */
 export const loginHospital = async (credentials) => {
-  // Try POST request first per prompt requirement, fallback to GET if needed
-  let response = await fetch(`${SPRING_API_URL}/hospital/login`, {
+  const response = await fetch(`${SPRING_API_URL}/hospital/login`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    credentials: 'include', // Receive refresh token cookie
     body: JSON.stringify({
       username: credentials.username,
       password: credentials.password,
     }),
   });
-
-  if (response.status === 405) {
-    // If backend only accepts GET for /hospital/login, retry via GET
-    response = await fetch(`${SPRING_API_URL}/hospital/login`, {
-      method: 'GET',
-      headers: { 'Content-Type': 'application/json' },
-      credentials: 'include',
-    });
-  }
 
   if (!response.ok) {
     let errorMsg = 'Hospital login failed. Please check credentials.';
@@ -78,27 +71,45 @@ export const loginHospital = async (credentials) => {
     throw new Error(errorMsg);
   }
 
-  // Attempt to acquire access token via refresh token cookie
+  // Read the refresh token from the JSON response body
+  let resBody = {};
+  try {
+    resBody = await response.json();
+  } catch {
+    resBody = {};
+  }
+
+  const refreshToken = resBody.refresh_token;
+
+  // Store the refresh token for future access-token requests
+  if (refreshToken) {
+    storeRefreshToken(refreshToken);
+  }
+
+  // Exchange the stored refresh token for an access token
   let token = null;
   try {
     token = await refreshAccessToken();
   } catch (err) {
-    console.warn('Refresh token retrieval fallback after hospital login:', err);
+    throw new Error('Hospital login succeeded but could not obtain access token: ' + err.message);
   }
 
-  return { success: true, accessToken: token, username: credentials.username };
+  return { success: true, accessToken: token, refreshToken, username: credentials.username };
 };
 
 /**
  * Doctor: Login
  * POST /doctor/login
  * Body: { username, password }
+ * Response: { "refresh_token": "..." }
+ *
+ * Reads refresh_token from JSON response, stores it, then exchanges
+ * it for an access token via POST /api/auth/token.
  */
 export const loginDoctor = async (credentials) => {
-  let response = await fetch(`${SPRING_API_URL}/doctor/login`, {
+  const response = await fetch(`${SPRING_API_URL}/doctor/login`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    credentials: 'include',
     body: JSON.stringify({
       username: credentials.username,
       password: credentials.password,
@@ -117,14 +128,30 @@ export const loginDoctor = async (credentials) => {
     throw new Error(errorMsg);
   }
 
+  // Read the refresh token from the JSON response body
+  let resBody = {};
+  try {
+    resBody = await response.json();
+  } catch {
+    resBody = {};
+  }
+
+  const refreshToken = resBody.refresh_token;
+
+  // Store the refresh token for future access-token requests
+  if (refreshToken) {
+    storeRefreshToken(refreshToken);
+  }
+
+  // Exchange the stored refresh token for an access token
   let token = null;
   try {
     token = await refreshAccessToken();
   } catch (err) {
-    console.warn('Refresh token retrieval fallback after doctor login:', err);
+    throw new Error('Doctor login succeeded but could not obtain access token: ' + err.message);
   }
 
-  return { success: true, accessToken: token, username: credentials.username };
+  return { success: true, accessToken: token, refreshToken, username: credentials.username };
 };
 
 /**

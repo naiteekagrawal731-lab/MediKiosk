@@ -54,6 +54,7 @@ export const PatientAccountPage = () => {
         role: 'PATIENT',
         username: loginForm.username.trim(),
         accessToken: res.accessToken,
+        refreshToken: res.refreshToken,
         profile: res.profile,
       });
       navigate('/patient/dashboard');
@@ -98,6 +99,7 @@ export const PatientAccountPage = () => {
         role: 'PATIENT',
         username: createForm.username.trim(),
         accessToken: res.accessToken,
+        refreshToken: res.refreshToken,
         profile: res.user,
       });
       navigate('/patient/dashboard');

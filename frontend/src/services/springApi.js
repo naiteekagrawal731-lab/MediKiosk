@@ -1,5 +1,5 @@
 import { getHospitalRegistrationNumber } from '../utils/kioskDevice';
-import { apiFetch, refreshAccessToken, setAccessToken } from './apiClient';
+import { apiFetch, storeRefreshToken, refreshAccessToken, setAccessToken } from './apiClient';
 
 const SPRING_API_URL = import.meta.env.VITE_SPRING_API_URL || 'https://medikiosk-mmys.onrender.com';
 
@@ -123,7 +123,6 @@ export const createPatientAccount = async (patientData) => {
     const response = await fetch(`${SPRING_API_URL}/patient/create`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      credentials: 'include',
       body: JSON.stringify(payload),
     });
 
@@ -144,7 +143,7 @@ export const createPatientAccount = async (patientData) => {
       throw new Error(errorMsg);
     }
 
-    // Automatically call loginPatient to authenticate & receive refresh token cookie + accessToken
+    // Automatically log in the new patient to receive and store the refresh token
     const loginResult = await loginPatient({
       username: payload.username,
       password: payload.password,
@@ -172,6 +171,10 @@ export const createPatientAccount = async (patientData) => {
  * Spring Boot: Patient Login
  * Request: POST /patient/login
  * Body: { registrationNumber, username, password }
+ * Response: { "refresh_token": "..." }
+ *
+ * Reads refresh_token from JSON response, stores it, then exchanges
+ * it for an access token via POST /api/auth/token.
  */
 export const loginPatient = async (credentials) => {
   try {
@@ -183,20 +186,11 @@ export const loginPatient = async (credentials) => {
       password: credentials.password,
     };
 
-    let response = await fetch(`${SPRING_API_URL}/patient/login`, {
+    const response = await fetch(`${SPRING_API_URL}/patient/login`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      credentials: 'include', // Receive refresh token cookie
       body: JSON.stringify(payload),
     });
-
-    if (response.status === 405) {
-      response = await fetch(`${SPRING_API_URL}/patient/login`, {
-        method: 'GET',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
-      });
-    }
 
     if (!response.ok) {
       let errorMsg = 'Patient login failed. Please check credentials.';
@@ -215,18 +209,28 @@ export const loginPatient = async (credentials) => {
       throw new Error(errorMsg);
     }
 
-    let token = null;
-    try {
-      token = await refreshAccessToken();
-    } catch (e) {
-      console.warn('Token refresh fallback after patient login:', e);
-    }
-
+    // Read the refresh token from the JSON response body
     let resBody = {};
     try {
       resBody = await response.json();
     } catch {
-      resBody = { success: true };
+      resBody = {};
+    }
+
+    const refreshToken = resBody.refresh_token;
+
+    // Store the refresh token for future access-token requests
+    if (refreshToken) {
+      storeRefreshToken(refreshToken);
+    }
+
+    // Exchange the stored refresh token for an access token
+    let token = null;
+    try {
+      token = await refreshAccessToken();
+    } catch (e) {
+      // refreshAccessToken() already cleared auth state on failure; re-throw
+      throw new Error('Patient login succeeded but could not obtain access token: ' + e.message);
     }
 
     const activeToken = token || resBody.accessToken;
@@ -237,6 +241,7 @@ export const loginPatient = async (credentials) => {
     return {
       success: true,
       accessToken: activeToken,
+      refreshToken,
       username: payload.username,
       profile: resBody.profile || resBody.patient || null,
     };
