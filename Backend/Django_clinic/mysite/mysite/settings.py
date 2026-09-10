@@ -66,10 +66,9 @@ ROOT_URLCONF = 'mysite.urls'
 
 CORS_ALLOW_ALL_ORIGINS = True
 
-CSRF_TRUSTED_ORIGINS = config(
-    "CSRF_TRUSTED_ORIGINS",
-    default="http://localhost:5173"
-).split(",")
+CSRF_TRUSTED_ORIGINS = [
+    "https://mediikiosk.vercel.app",
+]
 
 TEMPLATES = [
     {
