@@ -11,6 +11,8 @@ logger = logging.getLogger(__name__)
 load_dotenv()
 
 
+
+
 # ============================================================
 # GEMINI CLIENT
 # ============================================================
@@ -20,7 +22,73 @@ client = genai.Client(
 )
 
 
-MODEL_NAME = "gemini-3.5-flash-lite"
+# MODEL_NAME = "gemini-3.5-flash-lite"
+GEMINI_MODELS = [
+    "gemini-3.5-flash-lite",
+    "gemini-3.5-flash",
+    "gemini-3.6-flash",
+]
+
+def generate_with_fallback(prompt, response_schema):
+    last_error = None
+
+    for model_name in GEMINI_MODELS:
+
+        for attempt in range(3):
+
+            try:
+                logger.info(
+                    "Gemini request | model=%s | attempt=%d/3",
+                    model_name,
+                    attempt + 1
+                )
+
+                response = client.models.generate_content(
+                    model=model_name,
+                    contents=prompt,
+                    config=types.GenerateContentConfig(
+                        response_mime_type="application/json",
+                        response_schema=response_schema,
+                    ),
+                )
+
+                if response.parsed:
+                    logger.info(
+                        "Gemini success | model=%s | attempt=%d",
+                        model_name,
+                        attempt + 1
+                    )
+
+                    return response.parsed
+
+                if response.text:
+                    return json.loads(response.text)
+
+                raise ValueError(
+                    "Gemini returned empty response"
+                )
+
+            except Exception as e:
+
+                last_error = e
+
+                logger.exception(
+                    "GEMINI ERROR | model=%s | attempt=%d/3",
+                    model_name,
+                    attempt + 1
+                )
+
+                if attempt < 2:
+                    time.sleep(2)
+
+        logger.error(
+            "Gemini model failed completely | model=%s | switching to fallback",
+            model_name
+        )
+
+    raise RuntimeError(
+        "All Gemini fallback models failed"
+    ) from last_error
 
 
 # ============================================================
@@ -1614,44 +1682,10 @@ another relevant missing question or move to additional_information.
 Return ONLY the final valid JSON.
 """
 
-    MAX_RETRIES = 3
-
-    for attempt in range(3):
-        try:
-            response = client.models.generate_content(
-                model=MODEL_NAME,
-                contents=prompt,
-                config=types.GenerateContentConfig(
-                    response_mime_type="application/json",
-                    response_schema=ALLOPATHIC_RESPONSE_SCHEMA,
-                    temperature=0.2,
-                ),
-            )
-
-            logger.info(
-                "Gemini request successful on attempt %d/3",
-                attempt + 1
-            )
-
-            if response.parsed:
-                return response.parsed
-
-            if response.text:
-                return json.loads(response.text)
-
-            raise ValueError("Gemini returned an empty response")
-
-        except Exception as e:
-            logger.exception(
-                "GEMINI ERROR - attempt %d/3",
-                attempt + 1
-            )
-
-            if attempt == 2:
-                raise
-
-            time.sleep(1)
-
+    return generate_with_fallback(
+        prompt,
+        ALLOPATHIC_RESPONSE_SCHEMA
+    )
 
 # ============================================================
 # AYUSH
@@ -2934,43 +2968,10 @@ IMPORTANT OUTPUT RULES:
 - Do NOT return additional top-level keys.
 """
     
-    MAX_RETRIES = 5
-
-    for attempt in range(3):
-        try:
-            response = client.models.generate_content(
-                model=MODEL_NAME,
-                contents=prompt,
-                config=types.GenerateContentConfig(
-                    response_mime_type="application/json",
-                    response_schema=AYUSH_RESPONSE_SCHEMA,
-                    temperature=0.2,
-                ),
-            )
-
-            logger.info(
-                "Gemini request successful on attempt %d/3",
-                attempt + 1
-            )
-
-            if response.parsed:
-                return response.parsed
-
-            if response.text:
-                return json.loads(response.text)
-
-            raise ValueError("Gemini returned an empty response")
-
-        except Exception as e:
-            logger.exception(
-                "GEMINI ERROR - attempt %d/3",
-                attempt + 1
-            )
-
-            if attempt == 2:
-                raise
-
-            time.sleep(1)
+    return generate_with_fallback(
+        prompt,
+        AYUSH_RESPONSE_SCHEMA
+    )
 
 
 def generate_allopathic_summary(data, language="EN"):
