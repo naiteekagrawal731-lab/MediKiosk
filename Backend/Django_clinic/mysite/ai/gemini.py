@@ -4,7 +4,9 @@ import time
 from dotenv import load_dotenv
 from google import genai
 from google.genai import types
+import logging
 
+logger = logging.getLogger(__name__)
 
 load_dotenv()
 
@@ -1614,7 +1616,7 @@ Return ONLY the final valid JSON.
 
     MAX_RETRIES = 3
 
-    for attempt in range(MAX_RETRIES):
+    for attempt in range(3):
         try:
             response = client.models.generate_content(
                 model=MODEL_NAME,
@@ -1626,27 +1628,16 @@ Return ONLY the final valid JSON.
                 ),
             )
 
-            # Preferred: parsed response
-            if hasattr(response, "parsed") and response.parsed:
-                return response.parsed
-
-            # Fallback: raw JSON
-            if hasattr(response, "text") and response.text:
-                return json.loads(response.text)
-
-            raise ValueError("Gemini returned an empty response")
+            return response
 
         except Exception as e:
-            print(f"Gemini attempt {attempt + 1}/{MAX_RETRIES} failed: {e}")
+            logger.exception(
+                "GEMINI API ERROR - Attempt %d/3",
+                attempt + 1
+            )
 
-            # If this was the third attempt, raise the error
-            if attempt == MAX_RETRIES - 1:
-                raise RuntimeError(
-                    "Gemini request failed after 3 attempts"
-                ) from e
-
-            # Small delay before retry
-            time.sleep(1)
+            if attempt == 2:
+                raise
 
 
 # ============================================================
