@@ -27,7 +27,7 @@ django:
     key: ${DJANGO_API_KEY:the-key}
 
 jwt:
-  secret: ${JWT_SECRET:the-key}
+  secret: ${JWT_SECRET:w9K8v3Qx7mL2pR6tY4nV0cA5sD1fG8hJk3Zx6Wq9B2M=}
 
 gemini:
   api:
