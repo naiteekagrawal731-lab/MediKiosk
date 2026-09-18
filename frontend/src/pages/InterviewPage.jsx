@@ -195,6 +195,19 @@ export const InterviewPage = () => {
     }
     updatePreferredMode(mode);
     setAnswerMode(mode);
+    setErrorMsg('');
+
+    // Clear residual state from other modes so previous button/text/voice selections don't interfere
+    if (mode !== 'BUTTON') {
+      setSelectedButton('');
+    }
+    if (mode !== 'TYPE') {
+      setTextAnswer('');
+    }
+    if (mode !== 'VOICE' && !isRecording) {
+      setAudioBlob(null);
+      setAudioUrl('');
+    }
   };
 
   const fetchNextQuestion = async (answerData = null) => {
@@ -437,20 +450,12 @@ export const InterviewPage = () => {
     startRecording();
   };
 
-  // Option Click in BUTTON mode
+  // Option Click in BUTTON mode (selects option without auto-submitting)
   const handleOptionClick = (opt) => {
     if (loading || isRecording) return;
     setSelectedButton(opt);
+    setErrorMsg('');
     updatePreferredMode('BUTTON');
-
-    const answerData = {
-      question_key: questionKey,
-      question_text: questionText,
-      input_type: 'TOUCH',
-      answer_text: opt
-    };
-
-    fetchNextQuestion(answerData);
   };
 
   // Submit Answer
@@ -464,7 +469,7 @@ export const InterviewPage = () => {
 
     if (answerMode === 'VOICE') {
       if (!audioBlob) {
-        setErrorMsg('Please record your answer before submitting.');
+        setErrorMsg(t.recordBeforeSubmit || 'Please record your answer before submitting.');
         return;
       }
       answerData.input_type = 'VOICE';
@@ -473,7 +478,7 @@ export const InterviewPage = () => {
 
     } else if (answerMode === 'TYPE') {
       if (!textAnswer.trim()) {
-        setErrorMsg('Please type your answer before submitting.');
+        setErrorMsg(t.typeBeforeSubmit || 'Please type your answer before submitting.');
         return;
       }
       answerData.input_type = 'TEXT';
@@ -482,7 +487,7 @@ export const InterviewPage = () => {
 
     } else if (answerMode === 'BUTTON') {
       if (!selectedButton) {
-        setErrorMsg('Please select an option before submitting.');
+        setErrorMsg(t.selectOptionBeforeSubmit || 'Please select an option before submitting.');
         return;
       }
       answerData.input_type = 'TOUCH';
@@ -495,111 +500,163 @@ export const InterviewPage = () => {
 
   return (
     <PageContainer>
-      <div className="interview-main-card">
-        {/* Top Session Information */}
-        <div className="interview-header-info">
-          <h2 className="interview-session-id">
-            Session ID: <span className="session-id-val">{sessionId ? sessionId.toUpperCase() : ''}</span>
-          </h2>
-          <p className="interview-session-status">Session started</p>
-          <div className="interview-progress-pill-line"></div>
-          
-          <div className="question-badge-container">
-            <span className="kiosk-question-badge">
-              Question {questionNumber}
-            </span>
+      {/* ─── INTERVIEW PANEL ─── */}
+      <div className="iv-panel">
+
+        {/* ── HEADER BANNER ── */}
+        <div className="iv-header-banner">
+          <div className="iv-header-left">
+            <div className="iv-brand-logo" aria-hidden="true">
+              <svg width="32" height="32" viewBox="0 0 40 40" fill="none">
+                <rect width="40" height="40" rx="10" fill="#0369a1"/>
+                <path d="M20 10V30M10 20H30" stroke="white" strokeWidth="4.5" strokeLinecap="round"/>
+              </svg>
+            </div>
+            <div>
+              <div className="iv-brand-name">MediKiosk</div>
+              <div className="iv-brand-sub">AI Clinical History Interview</div>
+            </div>
+          </div>
+          <div className="iv-header-right">
+            <div className="iv-session-block">
+              <div className="iv-session-label">Session ID</div>
+              <div className="iv-session-id">{sessionId ? sessionId.toUpperCase() : '—'}</div>
+            </div>
+            <div className="iv-status-pill">
+              <span className="iv-status-dot" aria-hidden="true"></span>
+              <span>{t.sessionInProgress || 'Session in progress'}</span>
+            </div>
           </div>
         </div>
 
+        <div className="iv-divider" aria-hidden="true"></div>
+
+        {/* ── LOADING STATE ── */}
         {loading && !questionKey ? (
-          <div className="interview-loading-state">
-            <div className="kiosk-spinner"></div>
-            <h3>Loading interview...</h3>
+          <div className="iv-loading-state" role="status" aria-live="polite">
+            <div className="iv-spinner" aria-hidden="true"></div>
+            <p className="iv-loading-text">{t.loadingQuestion || 'Loading your interview question…'}</p>
+            <p className="iv-loading-sub">{t.pleaseWaitMoment || 'Please wait a moment'}</p>
           </div>
         ) : (
-          <div className="interview-body-content">
-            {/* Blue Question Container with Play Audio & Question Text Inside */}
-            <div className="kiosk-question-blue-box">
-              <button 
-                type="button" 
-                onClick={() => playQuestionAudio()} 
-                className="play-audio-btn"
+          <div className="iv-body">
+
+            {/* ── QUESTION SECTION ── */}
+            <div className="iv-question-section">
+              <div className="iv-question-number-badge" aria-label={`Question number ${String(questionNumber).padStart(2, '0')}`}>
+                QUESTION {String(questionNumber).padStart(2, '0')}
+              </div>
+
+              <h1 className="iv-question-text">
+                {questionText}
+              </h1>
+
+              {/* Play Audio Button */}
+              <button
+                type="button"
+                onClick={() => playQuestionAudio()}
+                className="iv-play-audio-btn"
+                aria-label="Play question audio"
               >
-                <span className="audio-icon-wrapper">
-                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <span className="iv-play-icon" aria-hidden="true">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                     <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
                     <path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"></path>
                   </svg>
                 </span>
-                <span className="play-audio-text">{t.playAudio || 'Play Audio'}</span>
+                <span>{t.playAudio || 'Play question audio'}</span>
               </button>
 
-              <h1 className="kiosk-question-text">
-                {questionText}
-              </h1>
-            </div>
-
-            {/* Inline Volume & Mute Controls Below Blue Question Box */}
-            <div className="audio-controls-row">
-              <div className="volume-group">
-                <label htmlFor="volume-slider">{t.volumeLabel || 'Volume:'}</label>
-                <input 
-                  id="volume-slider"
-                  type="range" 
-                  min="0" max="1" step="0.1" 
-                  value={volume} 
+              {/* Volume & Mute controls */}
+              <div className="iv-audio-controls" role="group" aria-label="Audio controls">
+                <span className="iv-vol-icon" aria-hidden="true">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                    <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
+                    <path d="M15.54 8.46a5 5 0 0 1 0 7.07"></path>
+                  </svg>
+                </span>
+                <label htmlFor="iv-volume-slider" className="iv-sr-label">{t.volumeLabel || 'Volume'}</label>
+                <input
+                  id="iv-volume-slider"
+                  type="range"
+                  min="0" max="1" step="0.1"
+                  value={volume}
                   onChange={(e) => handleVolumeChange(parseFloat(e.target.value))}
-                  className="kiosk-slider"
+                  className="iv-volume-slider"
+                  aria-label="Volume"
                 />
-              </div>
-              <div className="mute-group">
-                <input 
-                  type="checkbox" 
-                  id="mute-toggle" 
-                  checked={isMuted} 
-                  onChange={(e) => handleMuteChange(e.target.checked)} 
-                  className="kiosk-checkbox"
-                />
-                <label htmlFor="mute-toggle">{t.muteLabel || 'Mute'}</label>
+                <label htmlFor="iv-mute-toggle" className="iv-mute-label">
+                  <input
+                    type="checkbox"
+                    id="iv-mute-toggle"
+                    checked={isMuted}
+                    onChange={(e) => handleMuteChange(e.target.checked)}
+                    className="iv-mute-checkbox"
+                    aria-label="Mute audio"
+                  />
+                  <span>{t.muteLabel || 'Mute'}</span>
+                </label>
               </div>
             </div>
 
-            {/* Answer Mode Switcher Tabs */}
-            <div className="mode-tabs-grid">
-              <button 
-                type="button"
-                onClick={() => handleSelectMode('VOICE')} 
-                className={`mode-tab-btn ${answerMode === 'VOICE' ? 'active' : ''}`}
-              >
-                <span className="tab-icon">🔊</span>
-                <span>{t.voiceTab || 'VOICE'}</span>
-              </button>
+            <div className="iv-divider" aria-hidden="true"></div>
 
-              <button 
-                type="button"
-                onClick={() => handleSelectMode('BUTTON')} 
-                className={`mode-tab-btn ${answerMode === 'BUTTON' ? 'active' : ''} ${buttonOptions.length === 0 ? 'disabled' : ''}`}
-                disabled={buttonOptions.length === 0}
-                title={buttonOptions.length === 0 ? "No button options available for this question" : ""}
-              >
-                <span className="tab-icon">☝️</span>
-                <span>{t.buttonTab || 'BUTTON'}</span>
-              </button>
+            {/* ── ANSWER MODE SELECTOR ── */}
+            <div className="iv-mode-section">
+              <p className="iv-mode-heading">{t.modeHeading || 'HOW WOULD YOU LIKE TO ANSWER?'}</p>
+              <p className="iv-mode-hint">{t.modeHint || 'Choose the way you are most comfortable answering.'}</p>
 
-              <button 
-                type="button"
-                onClick={() => handleSelectMode('TYPE')} 
-                className={`mode-tab-btn ${answerMode === 'TYPE' ? 'active' : ''}`}
-              >
-                <span className="tab-icon">⌨️</span>
-                <span>{t.typeTab || 'TYPE'}</span>
-              </button>
+              <div className="iv-mode-tabs" role="group" aria-label="Answer mode">
+                <button
+                  type="button"
+                  id="mode-voice"
+                  onClick={() => handleSelectMode('VOICE')}
+                  className={`iv-mode-tab ${answerMode === 'VOICE' ? 'iv-mode-tab--active' : ''}`}
+                  aria-pressed={answerMode === 'VOICE'}
+                >
+                  <span className="iv-mode-tab-icon" aria-hidden="true">🎙</span>
+                  <span>{t.voiceTab || 'Voice'}</span>
+                </button>
+
+                <button
+                  type="button"
+                  id="mode-button"
+                  onClick={() => handleSelectMode('BUTTON')}
+                  className={`iv-mode-tab ${answerMode === 'BUTTON' ? 'iv-mode-tab--active' : ''} ${buttonOptions.length === 0 ? 'iv-mode-tab--disabled' : ''}`}
+                  disabled={buttonOptions.length === 0}
+                  aria-pressed={answerMode === 'BUTTON'}
+                  title={buttonOptions.length === 0 ? (t.noButtonOptionsHint || 'No button options available for this question') : ''}
+                >
+                  <span className="iv-mode-tab-icon" aria-hidden="true">👆</span>
+                  <span>{t.buttonTab || 'Choose'}</span>
+                </button>
+
+                <button
+                  type="button"
+                  id="mode-type"
+                  onClick={() => handleSelectMode('TYPE')}
+                  className={`iv-mode-tab ${answerMode === 'TYPE' ? 'iv-mode-tab--active' : ''}`}
+                  aria-pressed={answerMode === 'TYPE'}
+                >
+                  <span className="iv-mode-tab-icon" aria-hidden="true">⌨</span>
+                  <span>{t.typeTab || 'Type'}</span>
+                </button>
+              </div>
             </div>
 
-            {/* Error Display */}
+            <div className="iv-divider" aria-hidden="true"></div>
+
+            {/* ── ERROR MESSAGE ── */}
             {errorMsg && (
-              <div className="interview-error-msg">
-                <p>{errorMsg}</p>
+              <div className="iv-error-banner" role="alert" aria-live="assertive">
+                <span className="iv-error-icon" aria-hidden="true">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                    <circle cx="12" cy="12" r="10"/>
+                    <line x1="12" y1="8" x2="12" y2="12"/>
+                    <line x1="12" y1="16" x2="12.01" y2="16"/>
+                  </svg>
+                </span>
+                <span>{errorMsg}</span>
                 {isCompleting && (
                   <Button onClick={handleFinishQuestions} variant="primary" style={{ marginTop: '0.5rem' }}>
                     Retry Finalizing Session
@@ -608,115 +665,190 @@ export const InterviewPage = () => {
               </div>
             )}
 
-            {/* Input Action Area */}
-            <div className="mode-input-area">
+            {/* ── ANSWER INPUT AREA ── */}
+            <div className="iv-answer-section">
+              <p className="iv-answer-heading">{t.yourAnswerLabel || 'YOUR ANSWER'}</p>
+
+              {/* ── VOICE MODE ── */}
               {answerMode === 'VOICE' && (
-                <div className="voice-action-wrapper">
+                <div className="iv-voice-wrapper">
                   {!isRecording && !audioBlob && (
-                    <button 
+                    <button
                       type="button"
-                      onClick={startRecording} 
-                      className="kiosk-primary-action-btn voice-idle-btn"
+                      id="start-recording-btn"
+                      onClick={startRecording}
+                      className="iv-voice-idle-btn"
+                      aria-label="Start recording your voice answer"
                     >
-                      <span className="btn-icon">🎤</span>
-                      <span>{t.tapToSpeak || 'Tap to Speak'}</span>
+                      <span className="iv-mic-icon" aria-hidden="true">
+                        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                          <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/>
+                          <path d="M19 10v2a7 7 0 0 1-14 0v-2"/>
+                          <line x1="12" y1="19" x2="12" y2="23"/>
+                          <line x1="8" y1="23" x2="16" y2="23"/>
+                        </svg>
+                      </span>
+                      <span className="iv-voice-btn-label">{t.tapToSpeak || 'Tap to Speak'}</span>
+                      <span className="iv-voice-btn-hint">Tap the button to begin recording</span>
                     </button>
                   )}
 
                   {isRecording && (
-                    <button 
+                    <button
                       type="button"
-                      onClick={stopRecording} 
-                      className="kiosk-primary-action-btn voice-recording-btn"
+                      id="stop-recording-btn"
+                      onClick={stopRecording}
+                      className="iv-voice-recording-btn"
+                      aria-label="Stop recording"
                     >
-                      <span className="recording-pulse"></span>
-                      <span className="btn-icon">🎤</span>
-                      <span>{t.listening || 'Listening... (Tap to Stop)'}</span>
+                      <span className="iv-recording-rings" aria-hidden="true">
+                        <span className="iv-recording-ring iv-ring-1"></span>
+                        <span className="iv-recording-ring iv-ring-2"></span>
+                        <span className="iv-recording-dot"></span>
+                      </span>
+                      <span className="iv-voice-btn-label">{t.listening || 'Listening…'}</span>
+                      <span className="iv-voice-btn-hint">Tap to stop recording</span>
                     </button>
                   )}
 
                   {audioBlob && (
-                    <div className="recorded-preview-container">
-                      <audio src={audioUrl} controls className="preview-audio-player" />
-                      <button 
+                    <div className="iv-recorded-preview">
+                      <div className="iv-recorded-ready">
+                        <span className="iv-check-icon" aria-hidden="true">
+                          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                            <polyline points="20 6 9 17 4 12"/>
+                          </svg>
+                        </span>
+                        <span>{t.recordingReady || 'Recording ready'}</span>
+                      </div>
+                      <audio src={audioUrl} controls className="iv-audio-preview" aria-label="Preview your recording" />
+                      <button
                         type="button"
-                        onClick={replaceRecording} 
-                        className="kiosk-secondary-action-btn"
+                        id="record-again-btn"
+                        onClick={replaceRecording}
+                        className="iv-record-again-btn"
                       >
-                        🎤 {t.recordAgain || 'Record Again'}
+                        <span aria-hidden="true">🎙</span>
+                        <span>{t.recordAgain || 'Record Again'}</span>
                       </button>
                     </div>
                   )}
                 </div>
               )}
 
+              {/* ── BUTTON / CHOOSE MODE ── */}
               {answerMode === 'BUTTON' && (
-                <div className="button-options-wrapper">
+                <div className="iv-button-options-wrapper">
                   {buttonOptions.length > 0 ? (
-                    <div className="options-buttons-grid">
-                      {buttonOptions.map((opt, i) => (
-                        <button 
-                          key={i} 
-                          type="button"
-                          onClick={() => handleOptionClick(opt)}
-                          className={`kiosk-option-card ${selectedButton === opt ? 'selected' : ''}`}
-                        >
-                          {opt}
-                        </button>
-                      ))}
-                    </div>
+                    <>
+                      <p className="iv-options-label">{t.selectOptionLabel || 'SELECT AN OPTION'}</p>
+                      <div className="iv-options-grid">
+                        {buttonOptions.map((opt, i) => (
+                          <button
+                            key={i}
+                            type="button"
+                            onClick={() => handleOptionClick(opt)}
+                            className={`iv-option-btn ${selectedButton === opt ? 'iv-option-btn--selected' : ''}`}
+                            aria-pressed={selectedButton === opt}
+                          >
+                            {selectedButton === opt && (
+                              <span className="iv-option-check" aria-hidden="true">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                                  <polyline points="20 6 9 17 4 12"/>
+                                </svg>
+                              </span>
+                            )}
+                            <span>{opt}</span>
+                          </button>
+                        ))}
+                      </div>
+                    </>
                   ) : (
-                    <p className="no-button-options-msg">Please use Voice or Type to answer this question.</p>
+                    <p className="iv-no-options-msg">{t.useVoiceOrTypeMsg || 'Please use Voice or Type to answer this question.'}</p>
                   )}
                 </div>
               )}
 
+              {/* ── TYPE MODE ── */}
               {answerMode === 'TYPE' && (
-                <div className="type-input-wrapper">
-                  <textarea 
+                <div className="iv-type-wrapper">
+                  <textarea
+                    id="type-answer-input"
                     value={textAnswer}
                     onChange={(e) => setTextAnswer(e.target.value)}
-                    placeholder={t.typePlaceholder || "Type your answer here..."}
-                    className="kiosk-large-textarea"
+                    placeholder={t.typePlaceholder || 'Type your answer here…'}
+                    className="iv-textarea"
+                    aria-label="Type your answer"
                   />
                 </div>
               )}
             </div>
 
-            {/* Submit / Continue Button */}
-            <div className="submit-area">
-              <button 
+            <div className="iv-divider" aria-hidden="true"></div>
+
+            {/* ── SUBMIT BUTTON ── */}
+            <div className="iv-submit-section">
+              <button
                 type="button"
-                onClick={handleSubmit} 
+                id="submit-continue-btn"
+                onClick={handleSubmit}
                 disabled={loading || isRecording}
-                className="kiosk-submit-btn"
+                className="iv-submit-btn"
+                aria-label={loading ? 'Please wait, processing' : 'Submit answer and continue to next question'}
               >
-                {loading ? 'Please wait...' : (t.submitContinue || 'Submit / Continue →')}
+                {loading ? (
+                  <>
+                    <span className="iv-btn-spinner" aria-hidden="true"></span>
+                    <span>{t.pleaseWait || 'Processing…'}</span>
+                  </>
+                ) : (
+                  <>
+                    <span>{t.submitContinue || 'Submit & Continue'}</span>
+                    <span className="iv-arrow-icon" aria-hidden="true">
+                      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                        <line x1="5" y1="12" x2="19" y2="12"/>
+                        <polyline points="12 5 19 12 12 19"/>
+                      </svg>
+                    </span>
+                  </>
+                )}
               </button>
             </div>
+
+            {/* ── FOOTER NOTE ── */}
+            <div className="iv-footer-note" aria-hidden="true">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
+                <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+              </svg>
+              <span>{t.secureNotice || 'Your answers are securely processed for your clinical history.'}</span>
+            </div>
+
           </div>
         )}
       </div>
 
-      {/* Browser Back Confirmation Modal for AI Phase */}
+      {/* ── BROWSER BACK WARNING MODAL ── */}
       {showBackModal && (
-        <div className="kiosk-modal-overlay">
+        <div className="kiosk-modal-overlay" role="dialog" aria-modal="true" aria-labelledby="back-modal-title">
           <div className="kiosk-modal-card">
             <div className="kiosk-modal-icon">⚠️</div>
-            <h2 className="kiosk-modal-title">{t.backWarningTitle || 'Start New Test?'}</h2>
+            <h2 id="back-modal-title" className="kiosk-modal-title">{t.backWarningTitle || 'Start New Test?'}</h2>
             <p className="kiosk-modal-message">
               {t.backWarningMessage || 'Going back will start a new test and your current interview progress will be cleared. Do you want to continue?'}
             </p>
             <div className="kiosk-modal-actions">
-              <button 
-                type="button" 
+              <button
+                type="button"
+                id="modal-cancel-btn"
                 onClick={handleCancelBack}
                 className="kiosk-secondary-action-btn"
               >
                 {t.cancelBtn || 'Cancel'}
               </button>
-              <button 
-                type="button" 
+              <button
+                type="button"
+                id="modal-confirm-btn"
                 onClick={handleConfirmNewTest}
                 className="kiosk-submit-btn danger-btn"
               >
