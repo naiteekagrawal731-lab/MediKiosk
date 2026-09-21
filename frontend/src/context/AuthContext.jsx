@@ -51,7 +51,7 @@ export const AuthProvider = ({ children }) => {
    *
    * @param {{ role: string, username: string, accessToken: string, refreshToken?: string }} param
    */
-  const loginUser = ({ role, username, accessToken, refreshToken }) => {
+  const loginUser = ({ role, username, accessToken, refreshToken, profile }) => {
     // Store the refresh token in sessionStorage for future access-token requests
     if (refreshToken) {
       storeRefreshToken(refreshToken);
@@ -59,9 +59,16 @@ export const AuthProvider = ({ children }) => {
 
     const resolvedToken = accessToken || getAccessToken();
 
+    const userObj = {
+      username,
+      role,
+      ...(profile || {}),
+      profile: profile || null,
+    };
+
     const nextState = {
       isAuthenticated: true,
-      user: { username },
+      user: userObj,
       role,
       accessToken: resolvedToken,
     };

@@ -1,6 +1,25 @@
 import React, { useState, useEffect } from 'react';
 import { verifyClinicalSessionSummary, updateClinicalSessionSummary } from '../services/doctorApi';
 
+// Helper to format raw ISO timestamps into readable date & time (e.g. 19 Sep 2026, 08:30 PM)
+const formatDateTime = (val) => {
+  if (!val) return '';
+  try {
+    const d = new Date(val);
+    if (isNaN(d.getTime())) return String(val);
+    return d.toLocaleString('en-IN', {
+      day: '2-digit',
+      month: 'short',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: true,
+    });
+  } catch (e) {
+    return String(val);
+  }
+};
+
 // Helper to safely get value from object supporting multiple property alias names
 const getVal = (obj, ...keys) => {
   if (!obj) return undefined;
@@ -152,6 +171,10 @@ export const PatientSummaryReport = ({ summaryData, sessionId, onBack }) => {
     }
   };
 
+  const handleDownloadReport = () => {
+    window.print();
+  };
+
   // Filter AYUSH key-value metrics
   const ayushMetrics = [
     { label: 'Prakriti', key: 'prakriti', val: report.prakriti },
@@ -182,8 +205,26 @@ export const PatientSummaryReport = ({ summaryData, sessionId, onBack }) => {
   return (
     <div style={{ width: '100%', maxWidth: '900px', margin: '0 auto', fontFamily: '"Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif' }}>
       
+      {/* Print Styles */}
+      <style>{`
+        @media print {
+          .no-print, header, .kiosk-header, nav {
+            display: none !important;
+          }
+          body, .kiosk-page-container, .kiosk-page-wrapper, .interview-main-card {
+            background: #ffffff !important;
+            padding: 0 !important;
+            margin: 0 !important;
+            box-shadow: none !important;
+            border: none !important;
+            max-width: 100% !important;
+            width: 100% !important;
+          }
+        }
+      `}</style>
+
       {/* Top Action Bar */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem', flexWrap: 'wrap', gap: '1rem' }}>
+      <div className="no-print" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem', flexWrap: 'wrap', gap: '1rem' }}>
         <button
           type="button"
           onClick={onBack}
@@ -204,7 +245,29 @@ export const PatientSummaryReport = ({ summaryData, sessionId, onBack }) => {
           ← Back to Session Lookup
         </button>
 
-        <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
+        <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center', flexWrap: 'wrap' }}>
+          {/* Download / Print Report Button */}
+          <button
+            type="button"
+            onClick={handleDownloadReport}
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '0.4rem',
+              background: '#0f172a',
+              color: '#ffffff',
+              border: 'none',
+              borderRadius: '6px',
+              padding: '0.5rem 1.1rem',
+              fontSize: '0.9rem',
+              fontWeight: 700,
+              cursor: 'pointer',
+              boxShadow: '0 1px 3px rgba(0,0,0,0.1)'
+            }}
+          >
+            <span>📥</span> Download Report
+          </button>
+
           {verified ? (
             <div style={{
               display: 'inline-flex',
@@ -298,12 +361,12 @@ export const PatientSummaryReport = ({ summaryData, sessionId, onBack }) => {
 
       {/* Notifications */}
       {saveSuccess && (
-        <div style={{ backgroundColor: '#f0fdf4', border: '1px solid #bbf7d0', color: '#166534', padding: '0.75rem 1rem', borderRadius: '6px', marginBottom: '1rem', fontSize: '0.9rem' }}>
+        <div className="no-print" style={{ backgroundColor: '#f0fdf4', border: '1px solid #bbf7d0', color: '#166534', padding: '0.75rem 1rem', borderRadius: '6px', marginBottom: '1rem', fontSize: '0.9rem' }}>
           ✓ {saveSuccess}
         </div>
       )}
       {errorMsg && (
-        <div style={{ backgroundColor: '#fef2f2', border: '1px solid #fecaca', color: '#991b1b', padding: '0.75rem 1rem', borderRadius: '6px', marginBottom: '1rem', fontSize: '0.9rem' }}>
+        <div className="no-print" style={{ backgroundColor: '#fef2f2', border: '1px solid #fecaca', color: '#991b1b', padding: '0.75rem 1rem', borderRadius: '6px', marginBottom: '1rem', fontSize: '0.9rem' }}>
           ⚠️ {errorMsg}
         </div>
       )}
@@ -354,8 +417,8 @@ export const PatientSummaryReport = ({ summaryData, sessionId, onBack }) => {
               {hasValue(report.treatmentType) && (
                 <div><strong>Treatment Type:</strong> <span style={{ fontWeight: 700, color: '#0284c7' }}>{report.treatmentType}</span></div>
               )}
-              {hasValue(report.session_created_at) && <div><strong>Created:</strong> {report.session_created_at}</div>}
-              {hasValue(report.session_completed_at) && <div><strong>Completed:</strong> {report.session_completed_at}</div>}
+              {hasValue(report.session_created_at) && <div><strong>Created:</strong> {formatDateTime(report.session_created_at)}</div>}
+              {hasValue(report.session_completed_at) && <div><strong>Completed:</strong> {formatDateTime(report.session_completed_at)}</div>}
             </div>
           </div>
 
@@ -801,7 +864,7 @@ export const PatientSummaryReport = ({ summaryData, sessionId, onBack }) => {
           left: 0,
           right: 0,
           bottom: 0,
-          backgroundColor: 'rgba(15, 23, 42, 0.6)',
+          backgroundColor: 'rgba(0,0,0,0.5)',
           display: 'flex',
           justifyContent: 'center',
           alignItems: 'center',

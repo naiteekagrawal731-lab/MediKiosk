@@ -34,15 +34,20 @@ export const SessionProvider = ({ children }) => {
   };
 
   const clearSession = () => {
-    setSessionData({
-      sessionId: null,
-      language: 'EN',
-      consentGiven: false,
-      patientRegistration: null,
-      treatmentType: null,
+    setSessionData((prev) => {
+      const currentLang = prev?.language || 'EN';
+      const nextState = {
+        sessionId: null,
+        language: currentLang,
+        consentGiven: false,
+        patientRegistration: null,
+        treatmentType: null,
+      };
+      sessionStorage.setItem('medikiosk_session_state', JSON.stringify(nextState));
+      return nextState;
     });
     Object.keys(sessionStorage).forEach((key) => {
-      if (key.startsWith('medikiosk_')) {
+      if (key.startsWith('medikiosk_') && key !== 'medikiosk_session_state') {
         sessionStorage.removeItem(key);
       }
     });

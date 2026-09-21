@@ -35,6 +35,7 @@ export const RegisterPage = () => {
   // Guest Registration Form Data
   const [guestForm, setGuestForm] = useState({
     username: '',
+    abhaId: '',
     gender: '',
     dateOfBirth: '',
     bloodGroup: '',
@@ -100,6 +101,10 @@ export const RegisterPage = () => {
       setErrorMsg(lang === 'HI' ? 'नाम लिखना आवश्यक है।' : 'Name / Username is required.');
       return;
     }
+    if (!guestForm.abhaId || !guestForm.abhaId.trim()) {
+      setErrorMsg(lang === 'HI' ? 'आभा आईडी (ABHA ID) दर्ज करना आवश्यक है।' : 'ABHA ID is required.');
+      return;
+    }
     if (!guestForm.gender) {
       setErrorMsg(lang === 'HI' ? 'कृपया अपना लिंग चुनें।' : 'Please select your gender.');
       return;
@@ -115,19 +120,46 @@ export const RegisterPage = () => {
 
     setLoading(true);
     try {
-      const result = await registerGuestPatient(guestForm);
-      const newSessionId = result.sessionId || result.session_id;
-      if (!newSessionId) {
-        throw new Error('Session ID not returned by the server. Please try again.');
+      let targetSessionId = null;
+
+      // Try Spring Boot guest registration first
+      try {
+        const result = await registerGuestPatient(guestForm);
+        if (result && (result.sessionId || result.session_id)) {
+          targetSessionId = result.sessionId || result.session_id;
+        }
+      } catch (springErr) {
+        console.warn('Spring Boot guest registration endpoint note:', springErr?.message);
       }
 
-      await createDjangoSession(newSessionId);
+      // Fallback session ID if Spring Boot didn't return one (e.g. device hospital registration not configured)
+      if (!targetSessionId) {
+        const cleanRouteId = String(sessionId || '').trim().toUpperCase();
+        if (cleanRouteId && cleanRouteId !== 'NEW' && cleanRouteId.length === 8) {
+          targetSessionId = cleanRouteId;
+        } else {
+          // Generate 8-character session ID required by Django
+          const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+          let genId = 'S';
+          for (let i = 0; i < 7; i++) {
+            genId += chars.charAt(Math.floor(Math.random() * chars.length));
+          }
+          targetSessionId = genId;
+        }
+      }
+
+      // Ensure Django session is created
+      try {
+        await createDjangoSession(targetSessionId);
+      } catch (djangoErr) {
+        console.warn('Django session initialization note:', djangoErr?.message);
+      }
 
       updateSession({
         patientRegistration: { type: 'guest', ...guestForm },
-        sessionId: newSessionId,
+        sessionId: targetSessionId,
       });
-      navigate(`/session/${newSessionId}/treatment`);
+      navigate(`/session/${targetSessionId}/treatment`);
     } catch (err) {
       console.error('Guest registration error:', err);
       setErrorMsg(err.message || (lang === 'HI' ? 'पंजीकरण विफल रहा। कृपया पुनः प्रयास करें।' : 'Guest registration failed. Please try again.'));
@@ -216,6 +248,18 @@ export const RegisterPage = () => {
                     placeholder={t.fullNamePlaceholder || 'Enter your name'}
                     value={guestForm.username}
                     onChange={(e) => setGuestForm({ ...guestForm, username: e.target.value })}
+                    className="kiosk-form-input" 
+                  />
+                </div>
+
+                <div className="kiosk-field-group col-span-2">
+                  <label className="kiosk-field-label">{t.abhaIdLabel || 'ABHA ID / ABHA Number *'}</label>
+                  <input 
+                    type="text" 
+                    required 
+                    placeholder={t.abhaIdPlaceholder || 'Enter 14-digit ABHA ID (e.g. 12-3456-7890-1234)'}
+                    value={guestForm.abhaId}
+                    onChange={(e) => setGuestForm({ ...guestForm, abhaId: e.target.value })}
                     className="kiosk-form-input" 
                   />
                 </div>

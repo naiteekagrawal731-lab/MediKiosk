@@ -2,11 +2,16 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { PageContainer } from '../components/PageContainer';
 import { useAuth } from '../context/AuthContext';
+import { useSession } from '../context/SessionContext';
+import { translations } from '../utils/translations';
 import { loginPatient, createPatientAccount } from '../services/springApi';
 
 export const PatientAccountPage = () => {
   const navigate = useNavigate();
   const { user, loginUser } = useAuth();
+  const { sessionData } = useSession();
+  const lang = sessionData?.language || 'EN';
+  const t = translations[lang] || translations['EN'];
 
   // If already logged in as patient, redirect to dashboard
   if (user && user.role === 'PATIENT') {
@@ -26,6 +31,7 @@ export const PatientAccountPage = () => {
   // Create Account form state
   const [createForm, setCreateForm] = useState({
     username: '',
+    abhaId: '',
     password: '',
     gender: '',
     dateOfBirth: '',
@@ -39,11 +45,11 @@ export const PatientAccountPage = () => {
     setErrorMsg('');
 
     if (!loginForm.username.trim()) {
-      setErrorMsg('Username is required.');
+      setErrorMsg(t.usernameLabel ? `${t.usernameLabel} ${lang === 'HI' ? 'आवश्यक है।' : 'is required.'}` : 'Username is required.');
       return;
     }
     if (!loginForm.password.trim()) {
-      setErrorMsg('Password is required.');
+      setErrorMsg(t.passwordLabel ? `${t.passwordLabel} ${lang === 'HI' ? 'आवश्यक है।' : 'is required.'}` : 'Password is required.');
       return;
     }
 
@@ -60,7 +66,7 @@ export const PatientAccountPage = () => {
       navigate('/patient/dashboard');
     } catch (err) {
       console.error('Patient portal login error:', err);
-      setErrorMsg(err.message || 'Login failed. Please check username and password.');
+      setErrorMsg(err.message || (lang === 'HI' ? 'लॉगिन विफल रहा। कृपया यूजरनेम और पासवर्ड जांचें।' : 'Login failed. Please check username and password.'));
     } finally {
       setLoading(false);
     }
@@ -72,23 +78,27 @@ export const PatientAccountPage = () => {
     setErrorMsg('');
 
     if (!createForm.username.trim()) {
-      setErrorMsg('Username is required.');
+      setErrorMsg(lang === 'HI' ? 'यूजरनेम आवश्यक है।' : 'Username is required.');
+      return;
+    }
+    if (!createForm.abhaId || !createForm.abhaId.trim()) {
+      setErrorMsg(lang === 'HI' ? 'आभा आईडी (ABHA ID) दर्ज करना आवश्यक है।' : 'ABHA ID is required.');
       return;
     }
     if (!createForm.password.trim()) {
-      setErrorMsg('Password is required.');
+      setErrorMsg(lang === 'HI' ? 'पासवर्ड आवश्यक है।' : 'Password is required.');
       return;
     }
     if (!createForm.gender) {
-      setErrorMsg('Please select your gender.');
+      setErrorMsg(lang === 'HI' ? 'कृपया अपना लिंग चुनें।' : 'Please select your gender.');
       return;
     }
     if (!createForm.dateOfBirth) {
-      setErrorMsg('Date of birth is required.');
+      setErrorMsg(lang === 'HI' ? 'जन्म तिथि आवश्यक है।' : 'Date of birth is required.');
       return;
     }
     if (!createForm.phoneNumber.trim()) {
-      setErrorMsg('Phone number is required.');
+      setErrorMsg(lang === 'HI' ? 'मोबाइल नंबर आवश्यक है।' : 'Phone number is required.');
       return;
     }
 
@@ -105,7 +115,7 @@ export const PatientAccountPage = () => {
       navigate('/patient/dashboard');
     } catch (err) {
       console.error('Patient portal create account error:', err);
-      setErrorMsg(err.message || 'Account creation failed. Please try again.');
+      setErrorMsg(err.message || (lang === 'HI' ? 'खाता निर्माण विफल रहा। कृपया पुनः प्रयास करें।' : 'Account creation failed. Please try again.'));
     } finally {
       setLoading(false);
     }
@@ -123,10 +133,10 @@ export const PatientAccountPage = () => {
             </svg>
           </div>
           <h1 style={{ fontSize: '2rem', fontWeight: 800, color: '#0f172a' }}>
-            Patient Portal
+            {t.patientPortalTitle || 'Patient Portal'}
           </h1>
           <p style={{ color: '#64748b', fontSize: '1.05rem', marginTop: '0.35rem' }}>
-            Manage your patient account and view health history
+            {t.patientPortalDesc || 'Manage your patient account and view health history'}
           </p>
         </div>
 
@@ -148,7 +158,7 @@ export const PatientAccountPage = () => {
               transition: 'all 0.2s ease'
             }}
           >
-            👤 Existing Patient Login
+            👤 {t.existingPatientLogin || 'Existing Patient Login'}
           </button>
 
           <button
@@ -167,7 +177,7 @@ export const PatientAccountPage = () => {
               transition: 'all 0.2s ease'
             }}
           >
-            ✨ Create Patient Account
+            ✨ {t.createAccountTab || 'Create Patient Account'}
           </button>
         </div>
 
@@ -182,11 +192,11 @@ export const PatientAccountPage = () => {
         {activeTab === 'login' && (
           <form onSubmit={handleLoginSubmit} className="kiosk-registration-form">
             <div className="kiosk-field-group" style={{ marginBottom: '1.25rem' }}>
-              <label className="kiosk-field-label">Username *</label>
+              <label className="kiosk-field-label">{t.usernameLabel || 'Username *'}</label>
               <input
                 type="text"
                 required
-                placeholder="Enter your username"
+                placeholder={t.usernamePlaceholder || 'Enter your username'}
                 value={loginForm.username}
                 onChange={(e) => setLoginForm({ ...loginForm, username: e.target.value })}
                 className="kiosk-form-input"
@@ -194,11 +204,11 @@ export const PatientAccountPage = () => {
             </div>
 
             <div className="kiosk-field-group" style={{ marginBottom: '1.5rem' }}>
-              <label className="kiosk-field-label">Password *</label>
+              <label className="kiosk-field-label">{t.passwordLabel || 'Password *'}</label>
               <input
                 type="password"
                 required
-                placeholder="Enter your password"
+                placeholder={t.passwordPlaceholder || 'Enter your password'}
                 value={loginForm.password}
                 onChange={(e) => setLoginForm({ ...loginForm, password: e.target.value })}
                 className="kiosk-form-input"
@@ -211,14 +221,14 @@ export const PatientAccountPage = () => {
                 onClick={() => navigate('/')}
                 className="kiosk-secondary-action-btn"
               >
-                ← Return to Welcome
+                {t.backBtn || '← Back'}
               </button>
               <button
                 type="submit"
                 disabled={loading}
                 className="kiosk-submit-btn"
               >
-                {loading ? 'Logging in...' : 'Login & View Dashboard →'}
+                {loading ? (t.loggingIn || 'Logging in...') : (t.loginBtn || 'Login & Continue →')}
               </button>
             </div>
           </form>
@@ -229,23 +239,35 @@ export const PatientAccountPage = () => {
           <form onSubmit={handleCreateSubmit} className="kiosk-registration-form">
             <div className="form-grid-2col">
               <div className="kiosk-field-group">
-                <label className="kiosk-field-label">Username *</label>
+                <label className="kiosk-field-label">{t.usernameLabel || 'Username *'}</label>
                 <input
                   type="text"
                   required
-                  placeholder="Choose a username"
+                  placeholder={t.usernamePlaceholder || 'Choose a username'}
                   value={createForm.username}
                   onChange={(e) => setCreateForm({ ...createForm, username: e.target.value })}
                   className="kiosk-form-input"
                 />
               </div>
 
+              <div className="kiosk-field-group col-span-2">
+                <label className="kiosk-field-label">{t.abhaIdLabel || 'ABHA ID / ABHA Number *'}</label>
+                <input
+                  type="text"
+                  required
+                  placeholder={t.abhaIdPlaceholder || 'Enter 14-digit ABHA ID (e.g. 12-3456-7890-1234)'}
+                  value={createForm.abhaId}
+                  onChange={(e) => setCreateForm({ ...createForm, abhaId: e.target.value })}
+                  className="kiosk-form-input"
+                />
+              </div>
+
               <div className="kiosk-field-group">
-                <label className="kiosk-field-label">Password *</label>
+                <label className="kiosk-field-label">{t.passwordLabel || 'Password *'}</label>
                 <input
                   type="password"
                   required
-                  placeholder="Choose a password"
+                  placeholder={t.passwordPlaceholder || 'Choose a password'}
                   value={createForm.password}
                   onChange={(e) => setCreateForm({ ...createForm, password: e.target.value })}
                   className="kiosk-form-input"
@@ -253,24 +275,28 @@ export const PatientAccountPage = () => {
               </div>
 
               <div className="kiosk-field-group col-span-2">
-                <label className="kiosk-field-label">Gender *</label>
+                <label className="kiosk-field-label">{t.genderLabel || 'Gender *'}</label>
                 <div className="gender-selector-grid">
-                  {['Male', 'Female', 'Other'].map((g) => (
+                  {[
+                    { key: 'Male', label: t.male || 'Male', icon: '👨' },
+                    { key: 'Female', label: t.female || 'Female', icon: '👩' },
+                    { key: 'Other', label: t.otherGender || 'Other', icon: '🧑' }
+                  ].map((g) => (
                     <button
-                      key={g}
+                      key={g.key}
                       type="button"
-                      onClick={() => setCreateForm({ ...createForm, gender: g })}
-                      className={`gender-btn ${createForm.gender === g ? 'active' : ''}`}
+                      onClick={() => setCreateForm({ ...createForm, gender: g.key })}
+                      className={`gender-btn ${createForm.gender === g.key ? 'active' : ''}`}
                     >
-                      <span>{g === 'Male' ? '👨' : g === 'Female' ? '👩' : '🧑'}</span>
-                      <span>{g}</span>
+                      <span>{g.icon}</span>
+                      <span>{g.label}</span>
                     </button>
                   ))}
                 </div>
               </div>
 
               <div className="kiosk-field-group">
-                <label className="kiosk-field-label">Date of Birth *</label>
+                <label className="kiosk-field-label">{t.dobLabel || 'Date of Birth *'}</label>
                 <input
                   type="date"
                   required
@@ -281,11 +307,11 @@ export const PatientAccountPage = () => {
               </div>
 
               <div className="kiosk-field-group">
-                <label className="kiosk-field-label">Phone Number *</label>
+                <label className="kiosk-field-label">{t.mobileLabel || 'Phone Number *'}</label>
                 <input
                   type="tel"
                   required
-                  placeholder="10-digit mobile number"
+                  placeholder={t.mobilePlaceholder || '10-digit mobile number'}
                   value={createForm.phoneNumber}
                   onChange={(e) => setCreateForm({ ...createForm, phoneNumber: e.target.value })}
                   className="kiosk-form-input"
@@ -293,13 +319,13 @@ export const PatientAccountPage = () => {
               </div>
 
               <div className="kiosk-field-group col-span-2">
-                <label className="kiosk-field-label">Blood Group (Optional)</label>
+                <label className="kiosk-field-label">{t.bloodGroupLabel || 'Blood Group (Optional)'}</label>
                 <select
                   value={createForm.bloodGroup}
                   onChange={(e) => setCreateForm({ ...createForm, bloodGroup: e.target.value })}
                   className="kiosk-form-select"
                 >
-                  <option value="">Select Blood Group...</option>
+                  <option value="">{t.selectBloodGroup || 'Select Blood Group...'}</option>
                   {['A+', 'A-', 'B+', 'B-', 'O+', 'O-', 'AB+', 'AB-'].map((bg) => (
                     <option key={bg} value={bg}>{bg}</option>
                   ))}
@@ -313,14 +339,14 @@ export const PatientAccountPage = () => {
                 onClick={() => navigate('/')}
                 className="kiosk-secondary-action-btn"
               >
-                ← Return to Welcome
+                {t.backBtn || '← Back'}
               </button>
               <button
                 type="submit"
                 disabled={loading}
                 className="kiosk-submit-btn"
               >
-                {loading ? 'Creating Account...' : 'Create Account & Open Dashboard →'}
+                {loading ? (t.creatingAccount || 'Creating Account...') : (t.createAccountBtn || 'Create Account & Continue →')}
               </button>
             </div>
           </form>

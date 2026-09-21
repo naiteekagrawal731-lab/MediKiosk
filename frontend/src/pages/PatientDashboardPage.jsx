@@ -1,13 +1,45 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { PageContainer } from '../components/PageContainer';
 import { useAuth } from '../context/AuthContext';
+import { useSession } from '../context/SessionContext';
+import { fetchPatientProfile } from '../services/springApi';
 
 export const PatientDashboardPage = () => {
   const navigate = useNavigate();
   const { user, logoutUser, changeUserPassword } = useAuth();
+  const { sessionData } = useSession();
 
   const [activeTab, setActiveTab] = useState('profile');
+
+  // Dynamic profile merging state
+  const [profileData, setProfileData] = useState(() => ({
+    ...(user?.profile || {}),
+    ...(user || {}),
+    ...(sessionData?.patientRegistration || {}),
+  }));
+
+  useEffect(() => {
+    // Keep profileData synchronized with auth user or session registration
+    setProfileData((prev) => ({
+      ...prev,
+      ...(user?.profile || {}),
+      ...(user || {}),
+      ...(sessionData?.patientRegistration || {}),
+    }));
+
+    const loadRemoteProfile = async () => {
+      try {
+        const remote = await fetchPatientProfile();
+        if (remote) {
+          setProfileData((prev) => ({ ...prev, ...remote }));
+        }
+      } catch (err) {
+        console.info('Remote profile fetch note:', err);
+      }
+    };
+    loadRemoteProfile();
+  }, [user, sessionData]);
 
   // Change password state
   const [newPassword, setNewPassword] = useState('');
@@ -52,8 +84,6 @@ export const PatientDashboardPage = () => {
       setPwdLoading(false);
     }
   };
-
-  const profileData = user?.profile || user || {};
 
   return (
     <PageContainer>
@@ -154,6 +184,13 @@ export const PatientDashboardPage = () => {
                 <div style={{ fontSize: '0.8rem', fontWeight: 600, color: '#64748b', textTransform: 'uppercase' }}>Username</div>
                 <div style={{ fontSize: '1.05rem', fontWeight: 700, color: '#0f172a', marginTop: '0.2rem' }}>
                   {profileData.username || user?.username || '—'}
+                </div>
+              </div>
+
+              <div>
+                <div style={{ fontSize: '0.8rem', fontWeight: 600, color: '#64748b', textTransform: 'uppercase' }}>ABHA ID</div>
+                <div style={{ fontSize: '1.05rem', fontWeight: 700, color: '#0284c7', marginTop: '0.2rem' }}>
+                  {profileData.abhaId || profileData.abha_id || '—'}
                 </div>
               </div>
 

@@ -23,12 +23,17 @@ export const createHospital = async (hospitalData) => {
 
   if (!response.ok) {
     let errorMsg = 'Failed to create hospital account.';
+    const resClone = response.clone();
     try {
       const errJson = await response.json();
       errorMsg = errJson.message || errJson.error || errorMsg;
     } catch {
-      const text = await response.text();
-      if (text) errorMsg = text;
+      try {
+        const text = await resClone.text();
+        if (text) errorMsg = text;
+      } catch {
+        // Ignore
+      }
     }
     throw new Error(errorMsg);
   }
@@ -61,12 +66,17 @@ export const loginHospital = async (credentials) => {
 
   if (!response.ok) {
     let errorMsg = 'Hospital login failed. Please check credentials.';
+    const resClone = response.clone();
     try {
       const errJson = await response.json();
       errorMsg = errJson.message || errJson.error || errorMsg;
     } catch {
-      const text = await response.text();
-      if (text) errorMsg = text;
+      try {
+        const text = await resClone.text();
+        if (text) errorMsg = text;
+      } catch {
+        // Ignore
+      }
     }
     throw new Error(errorMsg);
   }
@@ -118,12 +128,17 @@ export const loginDoctor = async (credentials) => {
 
   if (!response.ok) {
     let errorMsg = 'Doctor login failed. Please check credentials.';
+    const resClone = response.clone();
     try {
       const errJson = await response.json();
       errorMsg = errJson.message || errJson.error || errorMsg;
     } catch {
-      const text = await response.text();
-      if (text) errorMsg = text;
+      try {
+        const text = await resClone.text();
+        if (text) errorMsg = text;
+      } catch {
+        // Ignore
+      }
     }
     throw new Error(errorMsg);
   }
@@ -180,12 +195,17 @@ export const createDoctor = async (doctorData) => {
 
   if (!response.ok) {
     let errorMsg = 'Failed to create doctor.';
+    const resClone = response.clone();
     try {
       const errJson = await response.json();
       errorMsg = errJson.message || errJson.error || errorMsg;
     } catch {
-      const text = await response.text();
-      if (text) errorMsg = text;
+      try {
+        const text = await resClone.text();
+        if (text) errorMsg = text;
+      } catch {
+        // Ignore
+      }
     }
     throw new Error(errorMsg);
   }
@@ -212,12 +232,17 @@ export const fetchHospitalRegistrationNumber = async () => {
 
   if (!response.ok) {
     let errorMsg = 'Failed to retrieve hospital registration number.';
+    const resClone = response.clone();
     try {
       const errJson = await response.json();
       errorMsg = errJson.message || errJson.error || errorMsg;
     } catch {
-      const text = await response.text();
-      if (text) errorMsg = text;
+      try {
+        const text = await resClone.text();
+        if (text) errorMsg = text;
+      } catch {
+        // Ignore
+      }
     }
     throw new Error(errorMsg);
   }

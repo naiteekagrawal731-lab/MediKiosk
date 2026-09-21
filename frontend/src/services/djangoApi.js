@@ -17,6 +17,9 @@ export const createDjangoSession = async (sessionId) => {
     );
 
     if (!response.ok) {
+      if (response.status === 409) {
+        return { success: true, message: 'Session already exists', session_id: sessionId };
+      }
       let errorMsg = `Server returned ${response.status}: ${response.statusText}`;
 
       try {

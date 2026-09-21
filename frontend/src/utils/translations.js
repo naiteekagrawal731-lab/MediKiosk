@@ -14,6 +14,8 @@ export const translations = {
     loginTitle: "Patient Account Login",
     fullNameLabel: "Full Name / Username *",
     fullNamePlaceholder: "Enter your name",
+    abhaIdLabel: "ABHA ID / ABHA Number *",
+    abhaIdPlaceholder: "Enter 14-digit ABHA ID (e.g. 12-3456-7890-1234)",
     nameLabel: "Your Name",
     ageLabel: "Your Age",
     genderLabel: "Gender *",
@@ -81,9 +83,48 @@ export const translations = {
     backWarningTitle: "Start New Test?",
     backWarningMessage: "Going back will start a new test and your current interview progress will be cleared. Do you want to continue?",
     cancelBtn: "Cancel",
-    okBtn: "OK"
+    okBtn: "OK",
+
+    // Header Translations
+    patientAccount: "Patient Account",
+    staff: "Staff",
+    tagline: "Your Health, Our Priority",
+
+    // Welcome Page Translations
+    welcomeTitle: "Welcome to MediKiosk",
+    welcomeSubtitle: "Your Digital Health History Assistant",
+    welcomeDesc: "This kiosk helps collect your medical history before your consultation to save time and assist your doctor in providing better care.",
+    featureTimeTitle: "Saves Consultation Time",
+    featureTimeDesc: "Quickly record symptoms before entering the doctor's cabin.",
+    featureVoiceTitle: "Voice & Touch Friendly",
+    featureVoiceDesc: "Speak or tap buttons easily. Designed for all age groups.",
+    featureSafeTitle: "Safe & Confidential",
+    featureSafeDesc: "Your information is encrypted and securely sent to your doctor.",
+    startConsultation: "Start Consultation →",
+    patientAccountLoginCreate: "Patient Account (Login / Create Account)",
+
+    // Staff Landing Page Translations
+    hospitalStaffAccess: "Hospital Staff Access",
+    staffPortalNotice: "Select your portal to log in. (Not for patient use)",
+    loginHospital: "Login to Your Hospital",
+    hospitalAdminSub: "For Hospital Administrators & System Managers",
+    loginDoctor: "Login as Doctor",
+    doctorSub: "For Medical Practitioners & Physicians",
+    mainSystemAdmin: "Main System Admin",
+    mainAdminSub: "For System Administrators & Platform Managers",
+    returnPatientWelcome: "← Return to Patient Welcome Screen",
+
+    // Patient Account / Portal Translations
+    patientPortalTitle: "Patient Portal",
+    patientPortalDesc: "Manage your patient account and view health history",
+    createAccountTab: "Create Account",
+    createAccountBtn: "Create Account & Continue →",
+    creatingAccount: "Creating Account...",
+    alreadyHaveAccount: "Already have an account? Login",
+    needAccount: "Need an account? Register"
   },
   HI: {
+
     languageQuestion: "कृपया अपनी पसंदीदा भाषा चुनें",
     consentQuestion: "क्या आप अपनी बीमारी की जानकारी डॉक्टर के साथ शेयर करने की अनुमति देते हैं?",
     yesConsent: "हाँ, अनुमति है",
@@ -98,6 +139,8 @@ export const translations = {
     loginTitle: "मरीज खाता लॉगिन",
     fullNameLabel: "पूरा नाम *",
     fullNamePlaceholder: "अपना नाम लिखें",
+    abhaIdLabel: "आभा आईडी / ABHA नंबर *",
+    abhaIdPlaceholder: "14-अंकों का आभा आईडी दर्ज करें (उदा. 12-3456-7890-1234)",
     nameLabel: "आपका नाम",
     ageLabel: "आपकी उम्र",
     genderLabel: "लिंग *",
@@ -165,7 +208,46 @@ export const translations = {
     backWarningTitle: "नया टेस्ट शुरू करें?",
     backWarningMessage: "पीछे जाने से एक नया टेस्ट शुरू होगा और आपकी वर्तमान साक्षात्कार प्रगति मिटा दी जाएगी। क्या आप जारी रखना चाहते हैं?",
     cancelBtn: "रद्द करें",
-    okBtn: "ठीक है"
+    okBtn: "ठीक है",
+
+    // Header Translations in Hindi
+    patientAccount: "मरीज खाता",
+    staff: "स्टाफ",
+    tagline: "आपका स्वास्थ्य, हमारी प्राथमिकता",
+
+    // Welcome Page Translations in Hindi
+    welcomeTitle: "MediKiosk में आपका स्वागत है",
+    welcomeSubtitle: "आपका डिजिटल स्वास्थ्य इतिहास सहायक",
+    welcomeDesc: "यह कियोस्क परामर्श से पहले आपकी चिकित्सीय जानकारी एकत्र करने में मदद करता है ताकि समय बचे और डॉक्टर आपकी बेहतर देखभाल कर सकें।",
+    featureTimeTitle: "परामर्श के समय की बचत",
+    featureTimeDesc: "डॉक्टर के केबिन में जाने से पहले लक्षणों को तुरंत दर्ज करें।",
+    featureVoiceTitle: "आवाज और स्पर्श अनुकूल",
+    featureVoiceDesc: "आसानी से बोलें या बटन दबाएं। सभी आयु वर्गों के लिए डिज़ाइन किया गया।",
+    featureSafeTitle: "सुरक्षित और गोपनीय",
+    featureSafeDesc: "आपकी जानकारी एन्क्रिप्टेड है और सुरक्षित रूप से आपके डॉक्टर को भेजी जाती है।",
+    startConsultation: "परामर्श शुरू करें →",
+    patientAccountLoginCreate: "मरीज खाता (लॉगिन / नया खाता बनाएं)",
+
+    // Staff Landing Page Translations in Hindi
+    hospitalStaffAccess: "अस्पताल स्टाफ एक्सेस",
+    staffPortalNotice: "लॉगिन करने के लिए अपना पोर्टल चुनें। (मरीजों के लिए नहीं)",
+    loginHospital: "अपने अस्पताल में लॉगिन करें",
+    hospitalAdminSub: "अस्पताल प्रशासकों और सिस्टम प्रबंधकों के लिए",
+    loginDoctor: "डॉक्टर के रूप में लॉगिन करें",
+    doctorSub: "चिकित्सकों और डॉक्टरों के लिए",
+    mainSystemAdmin: "मुख्य सिस्टम एडमिन",
+    mainAdminSub: "सिस्टम एडमिनिस्ट्रेटर और प्लेटफॉर्म मैनेजर के लिए",
+    returnPatientWelcome: "← मरीज स्वागत स्क्रीन पर लौटें",
+
+    // Patient Account / Portal Translations in Hindi
+    patientPortalTitle: "मरीज पोर्टल",
+    patientPortalDesc: "अपना मरीज खाता प्रबंधित करें और स्वास्थ्य इतिहास देखें",
+    createAccountTab: "नया खाता बनाएं",
+    createAccountBtn: "खाता बनाएं और आगे बढ़ें →",
+    creatingAccount: "खाता बन रहा है...",
+    alreadyHaveAccount: "क्या आपका पहले से खाता है? लॉगिन करें",
+    needAccount: "खाता चाहिए? पंजीकरण करें"
   }
 };
+
 

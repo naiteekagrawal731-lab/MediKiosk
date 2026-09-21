@@ -1,9 +1,14 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { PageContainer } from '../components/PageContainer';
+import { useSession } from '../context/SessionContext';
+import { translations } from '../utils/translations';
 
 export const StaffLandingPage = () => {
   const navigate = useNavigate();
+  const { sessionData } = useSession();
+  const lang = sessionData?.language || 'EN';
+  const t = translations[lang] || translations['EN'];
 
   return (
     <PageContainer>
@@ -19,10 +24,10 @@ export const StaffLandingPage = () => {
             </svg>
           </div>
           <h1 style={{ fontSize: '2.25rem', fontWeight: 800, color: '#0f172a', letterSpacing: '-0.02em' }}>
-            Hospital Staff Access
+            {t.hospitalStaffAccess || 'Hospital Staff Access'}
           </h1>
           <p style={{ color: '#64748b', fontSize: '1.15rem', marginTop: '0.5rem', fontWeight: 500 }}>
-            Select your portal to log in. (Not for patient use)
+            {t.staffPortalNotice || 'Select your portal to log in. (Not for patient use)'}
           </p>
         </div>
 
@@ -46,10 +51,10 @@ export const StaffLandingPage = () => {
           >
             <div>
               <div style={{ fontSize: '1.4rem', fontWeight: 800, color: '#0f172a' }}>
-                Login to Your Hospital
+                {t.loginHospital || 'Login to Your Hospital'}
               </div>
               <div style={{ fontSize: '0.95rem', color: '#64748b', marginTop: '0.2rem', fontWeight: 500 }}>
-                For Hospital Administrators & System Managers
+                {t.hospitalAdminSub || 'For Hospital Administrators & System Managers'}
               </div>
             </div>
             <span style={{ fontSize: '1.8rem', color: '#0ea5e9' }}>→</span>
@@ -73,10 +78,10 @@ export const StaffLandingPage = () => {
           >
             <div>
               <div style={{ fontSize: '1.4rem', fontWeight: 800, color: '#0f172a' }}>
-                Login as Doctor
+                {t.loginDoctor || 'Login as Doctor'}
               </div>
               <div style={{ fontSize: '0.95rem', color: '#64748b', marginTop: '0.2rem', fontWeight: 500 }}>
-                For Medical Practitioners & Physicians
+                {t.doctorSub || 'For Medical Practitioners & Physicians'}
               </div>
             </div>
             <span style={{ fontSize: '1.8rem', color: '#0ea5e9' }}>→</span>
@@ -99,10 +104,10 @@ export const StaffLandingPage = () => {
           >
             <div>
               <div style={{ fontSize: '1.4rem', fontWeight: 800, color: '#0f172a' }}>
-                Main System Admin
+                {t.mainSystemAdmin || 'Main System Admin'}
               </div>
               <div style={{ fontSize: '0.95rem', color: '#64748b', marginTop: '0.2rem', fontWeight: 500 }}>
-                For System Administrators &amp; Platform Managers
+                {t.mainAdminSub || 'For System Administrators & Platform Managers'}
               </div>
             </div>
             <span style={{ fontSize: '1.8rem', color: '#0ea5e9' }}>→</span>
@@ -124,7 +129,7 @@ export const StaffLandingPage = () => {
               textDecoration: 'underline',
             }}
           >
-            ← Return to Patient Welcome Screen
+            {t.returnPatientWelcome || '← Return to Patient Welcome Screen'}
           </button>
         </div>
       </div>

@@ -395,4 +395,3 @@ export const DoctorDashboardPage = () => {
     </PageContainer>
   );
 };
-
