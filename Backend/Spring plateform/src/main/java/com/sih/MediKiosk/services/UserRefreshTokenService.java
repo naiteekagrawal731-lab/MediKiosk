@@ -23,13 +23,12 @@ public class UserRefreshTokenService {
     UUID generateRefreshToken(User user){
         Optional<UserRefreshToken> refreshToken = userRefreshTokenRepository.findByUser(user);
         UserRefreshToken token;
-        if(refreshToken.isEmpty()){
-            token = UserRefreshToken.builder()
+        token = UserRefreshToken.builder()
                     .token(UUID.randomUUID())
                     .user(user)
                     .build();
-        }else{
-            token = refreshToken.get();
+        if(!refreshToken.isEmpty()){
+            userRefreshTokenRepository.delete(refreshToken.get());
         }
         userRefreshTokenRepository.save(token);
         log.info("Refresh token for user = "+user.getUsername()+" created successfully");
